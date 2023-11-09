@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
 from django.db.models.signals import pre_save
+from django.core.exceptions import ValidationError
 # Create your models here.
 
 class User(AbstractUser):
@@ -16,14 +17,20 @@ class User(AbstractUser):
         return self.username
 
 class Follow(models.Model):
-    follow_from = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE) # who follow
-    follow_to = models.ForeignKey(User, related_name='follower', on_delete=models.CASCADE) # who is followed
+    follower = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE) # who follow
+    followed = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE) # who is followed
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return f"{self.follow_from} follows {self.follow_to}"
+        return f"{self.follower} follows {self.followed}"
     
     class Meta:
-        unique_together = ('follow_from', 'follow_to')
+        unique_together = ('follower', 'followed')
+
+    
+@receiver(pre_save, sender=Follow)
+def check_self_following(sender, instance, **kwargs):
+    if instance.follower == instance.followed:
+        raise ValidationError('You can not follow yourself')    
 
 
 class Profile(models.Model):
@@ -38,8 +45,8 @@ class Profile(models.Model):
     def follow(self, user):
         try:
             Follow.objects.create(
-                follow_from=self.user,
-                follow_to=user
+                follower=self.user,
+                followed=user
             )
             return True
         except:
@@ -48,8 +55,8 @@ class Profile(models.Model):
     def unfollow(self, user):
         try:
             follow = Follow.objects.get(
-                follow_from=self.user,
-                follow_to=user
+                follower=self.user,
+                followed=user
             )
             follow.delete()
             return True

@@ -1,6 +1,5 @@
 from django.test import TestCase
 from accounts.models import User, Profile
-from tests.factories import UserFactory
 
 class TestProfile(TestCase):
     def setUp(self) -> None:
@@ -9,7 +8,6 @@ class TestProfile(TestCase):
         self.user2 = User.objects.get(username='user 2')
         user1 = User.objects.get(username='user 1')
         self.prof1 = Profile.objects.get(user=user1)
-
 
     def test_create_user_creates_user_profile(self):
         user3 = User.objects.create_user(username='user 3', password='password3', email='email3@gmail.com')

@@ -15,6 +15,3 @@ class ProfileFactory(factory.django.DjangoModelFactory):
         model = Profile
         
     user = factory.SubFactory(UserFactory)
-
-        
-    

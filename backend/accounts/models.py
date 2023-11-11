@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_save, post_save
 from django.core.exceptions import ValidationError
 # Create your models here.
 
@@ -35,9 +35,8 @@ def check_self_following(sender, instance, **kwargs):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    # followers = models.ManyToManyField(User, symmetrical=False, related_name='following')
-    profile_name = models.CharField(max_length=20)
-    bio = models.CharField(max_length=150, blank=True, null=True)
+    profile_name = models.CharField(max_length=20, null=True, blank=True)
+    bio = models.CharField(max_length=150, null=True, blank=True)
     profile_picture = models.FileField(upload_to='profile_pictures/', default='/profile_pictures/default_profile_picture.png')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -62,4 +61,19 @@ class Profile(models.Model):
             return True
         except Follow.DoesNotExist:
             return False
+        
+    @property
+    def followers(self):
+        return self.user.followers.all()
     
+    @property
+    def following(self):
+        return self.user.following.all()
+
+
+@receiver(post_save, sender=User)
+def signup_create_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(
+            user=instance
+        )

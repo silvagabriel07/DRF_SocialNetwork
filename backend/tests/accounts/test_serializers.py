@@ -1,6 +1,6 @@
 from rest_framework.test import APITestCase, APIRequestFactory
 from accounts.models import Profile
-from tests.factories import UserFactory
+from tests.accounts.factories import UserFactory
 from accounts.serializers import UserSerializer, ProfileSerializer
 from django.urls import reverse
 

@@ -22,7 +22,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         source='user',
         many=False,
         read_only=True,
-        view_name='user-detail'
+        view_name='user-detail',
     )
     created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S.%fZ", read_only=True)    
 

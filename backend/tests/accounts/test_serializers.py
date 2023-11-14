@@ -33,20 +33,38 @@ class TestUserCreationSerializer(APITestCase):
     def test_data_serialized(self):
         data = {
             'id': 1,
-            'username': 'user 00',
+            'username': 'user00',
             'email': 'em@gmail.com',
             'password': 'senha123@',
             'is_active': True
         }
         expected = {
             'id': 1,
-            'username': 'user 00',
+            'username': 'user00',
             'email': 'em@gmail.com',
             'is_active': True
         }
         serializer = UserCreationSerializer(data)
         self.assertEqual(serializer.data, expected)
         
+
+class TestUserUpdateSerializer(APITestCase):
+    def test_data_serialized(self):
+        data = {
+            'id': 1,
+            'username': 'user00',
+            'email': 'em@gmail.com',
+            'password': 'senha123@',
+            'is_active': True
+        }
+        expected = {
+            'id': 1,
+            'username': 'user00',
+            'email': 'em@gmail.com',
+            'is_active': True
+        }
+        serializer = UserCreationSerializer(data)
+        self.assertEqual(serializer.data, expected)
     
 
 class TestProfileSerializer(APITestCase):

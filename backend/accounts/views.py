@@ -1,6 +1,7 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, serializers, status
+from rest_framework.views import Response
 from accounts.models import User, Profile
-from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer
+from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer
 # Create your views here.
 
 class UserDetail(generics.RetrieveAPIView):
@@ -24,6 +25,36 @@ class UserRegistration(generics.CreateAPIView):
     
 user_registration_view = UserRegistration.as_view()
 
+
+class UserUpdate(generics.UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserUpdateSerializer
+    
+    def update(self, request, *args, **kwargs):
+        user = self.get_object()
+
+        if not request.user == user:
+            error_response = {'request.user': 'You are not authorized to perform this action.'}
+            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
+
+        return super().update(request, *args, **kwargs)
+
+user_update_view = UserUpdate.as_view()    
+
+
+class UserDelete(generics.DestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        user = self.get_object()
+        
+        if not request.user == user:
+            error_response = {'request.user': 'You are not authorized to perform this action.'}
+            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
+        return super().destroy(request, *args, **kwargs)
+
+user_delete_view = UserDelete.as_view()    
 
 
 class ProfileDetail(generics.RetrieveAPIView):

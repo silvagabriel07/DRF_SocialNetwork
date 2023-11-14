@@ -24,7 +24,7 @@ class TestUserRegistration(APITestCase):
     
     def test_post_create_user_successfully(self):
         data = {
-            'username': 'user 00',
+            'username': 'user00',
             'email': 'email00@gmail.com',
             'password': 'pessoas00@',
         }
@@ -50,7 +50,7 @@ class TestUserRegistration(APITestCase):
 
     def test_post_with_already_existing_email_fails(self):
         data = {
-            'username': 'user 00',
+            'username': 'user00',
             'email': self.user.email,
             'password': 'pessoas00@',
         }
@@ -59,7 +59,7 @@ class TestUserRegistration(APITestCase):
         
     def test_post_password_with_less_than_8_characters(self):
         data = {
-            'username': 'user 00',
+            'username': 'user00',
             'email': 'email00@gmail.com',
             'password': 'pessoa1',
         }
@@ -69,7 +69,7 @@ class TestUserRegistration(APITestCase):
         
     def test_post_password_with_only_numbers(self):
         data = {
-            'username': 'user 00',
+            'username': 'user00',
             'email': 'email00@gmail.com',
             'password': '00123456',
         }
@@ -90,6 +90,79 @@ class TestUserList(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
 
+
+class TestUserUpdate(APITestCase):
+    def setUp(self) -> None:
+        self.user_old_password = 'Testado123@'
+        self.user = UserFactory(password=self.user_old_password)
+        self.url = reverse('user-update', args=[self.user.id])
+        self.client.force_login(self.user)
+        
+    def test_patch_update_username(self):
+        data = {
+            'old_password': self.user_old_password,
+            'username': 'user00'
+        }
+        response = self.client.patch(self.url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(User.objects.filter(username=data['username']).exists())
+
+    def test_patch_update_password(self):
+        data = {
+            'old_password': self.user_old_password,
+            'password': 'coolpass0@'
+        }
+        response = self.client.patch(self.url, data=data, format='json')
+        self.user.refresh_from_db()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(self.user.check_password(data['password']))
+
+    def test_put_update_password_and_username(self):
+        data = {
+            'old_password': self.user_old_password,
+            'password': 'coolpass0@',
+            'username': 'user00'
+        }
+        response = self.client.put(self.url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, data['username'])
+        self.assertTrue(self.user.check_password(data['password']))
+        
+    def test_put_user_is_not_updated_if_is_not_the_user_from_the_request(self):
+        user2 = UserFactory()
+        self.client.logout()
+        self.client.force_login(user2)
+        data = {
+            'old_password': self.user_old_password,
+            'username': 'user00',
+            'password': 'coolpass0@',
+        }
+        response = self.client.put(self.url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertFalse(User.objects.filter(username=data['username']).exists())
+        self.assertIn('You are not authorized to perform this action.', response.data['request.user'])
+
+
+class TestUserDelete(APITestCase):
+    def setUp(self) -> None:
+        self.user = UserFactory()
+        self.url = reverse('user-delete', args=[self.user.id])
+    
+    def test_delete_user_successfully(self):
+        self.client.force_login(self.user) 
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(User.objects.all().count(), 0)
+
+    def test_delete_user_is_not_updated_if_is_not_the_user_from_the_request(self):
+            user2 = UserFactory()
+            self.client.force_login(user2)
+            response = self.client.delete(self.url)
+            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+            self.assertEqual(User.objects.all().count(), 2)
+            self.assertIn('You are not authorized to perform this action.', response.data['request.user'])
+        
 
 class TestProfileDetail(APITestCase):
     def setUp(self) -> None:

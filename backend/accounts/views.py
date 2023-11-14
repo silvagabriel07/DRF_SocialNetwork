@@ -1,6 +1,6 @@
 from rest_framework import generics, permissions
 from accounts.models import User, Profile
-from accounts.serializers import UserSerializer, ProfileSerializer
+from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer
 # Create your views here.
 
 class UserDetail(generics.RetrieveAPIView):
@@ -10,12 +10,20 @@ class UserDetail(generics.RetrieveAPIView):
 user_detail_view = UserDetail.as_view()
 
 
-class UserListCreate(generics.ListCreateAPIView):
+class UserList(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    
+user_list_view = UserList.as_view()
+
+
+class UserRegistration(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserCreationSerializer
     permission_classes = [permissions.AllowAny]
     
-user_list_create_view = UserListCreate.as_view()
+user_registration_view = UserRegistration.as_view()
+
 
 
 class ProfileDetail(generics.RetrieveAPIView):

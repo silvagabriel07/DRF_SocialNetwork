@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase, APIRequestFactory
 from accounts.models import Profile
 from tests.accounts.factories import UserFactory
-from accounts.serializers import UserSerializer, ProfileSerializer
+from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer
 from django.urls import reverse
 
 class TestUserSerializer(APITestCase):    
@@ -28,6 +28,26 @@ class TestUserSerializer(APITestCase):
         profile_detail_url = reverse('profile-detail', args=[self.user.profile.id])
         self.assertEqual(self.serializer.data['profile_detail_url'].replace('http://testserver', ''), profile_detail_url)
 
+
+class TestUserCreationSerializer(APITestCase):
+    def test_data_serialized(self):
+        data = {
+            'id': 1,
+            'username': 'user 00',
+            'email': 'em@gmail.com',
+            'password': 'senha123@',
+            'is_active': True
+        }
+        expected = {
+            'id': 1,
+            'username': 'user 00',
+            'email': 'em@gmail.com',
+            'is_active': True
+        }
+        serializer = UserCreationSerializer(data)
+        self.assertEqual(serializer.data, expected)
+        
+    
 
 class TestProfileSerializer(APITestCase):
     def setUp(self) -> None:

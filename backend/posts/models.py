@@ -1,7 +1,9 @@
 from django.db import models
-from accounts.models import User
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
+
+User = settings.AUTH_USER_MODEL
 # Create your models here.
 
 class Tag(models.Model):
@@ -11,7 +13,7 @@ class Tag(models.Model):
 class Post(models.Model):
     title = models.CharField(max_length=45)
     content = models.TextField()
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     tags = models.ManyToManyField(Tag, related_name='posts')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -29,7 +31,7 @@ class Post(models.Model):
 
 class PostLike(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_liked')
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='posts_likes')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='likes')
 
     class Meta:
         unique_together = ('user', 'post')
@@ -50,7 +52,7 @@ class Comment(models.Model):
 
 class CommentLike(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments_liked')
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='comments_likes')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='likes')
     class Meta:
         unique_together = ('user', 'comment')
             

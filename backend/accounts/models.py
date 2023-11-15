@@ -3,6 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
 from django.core.exceptions import ValidationError
+from django.db.utils import IntegrityError
+from posts.models import Post, PostLike, Comment, CommentLike
 # Create your models here.
 
 class User(AbstractUser):
@@ -15,6 +17,8 @@ class User(AbstractUser):
     
     def __str__(self) -> str:
         return self.username
+
+    # methods related to authorizathion and permissions
 
 
 class Follow(models.Model):
@@ -53,34 +57,34 @@ class Profile(models.Model):
     def __str__(self) -> str:
         return f'{self.name} {self.id}'
     
+    # methods related to social network logic
+
+    def like_post(self, post):
+        try:
+            PostLike.objects.create(user=self.user, post=post)
+        except IntegrityError:
+            raise ValidationError("You have already liked this post.")
+            
     def follow(self, user):
         try:
-            Follow.objects.create(
-                follower=self.user,
-                followed=user
-            )
-            return True
-        except:
-            return False
-        
+            Follow.objects.create(follower=self.user, followed=user)
+        except IntegrityError:
+            raise ValidationError("You are already following this user.")
+    
     def unfollow(self, user):
         try:
-            follow = Follow.objects.get(
-                follower=self.user,
-                followed=user
-            )
+            follow = Follow.objects.get(follower=self.user, followed=user)
             follow.delete()
-            return True
         except Follow.DoesNotExist:
-            return False
+            raise ValidationError("You are not following this user.")
     
     @property
-    def followers(self):
-        return self.user.followers.all()
+    def total_followers(self):
+        return self.user.followers.all().count()
     
     @property
-    def following(self):
-        return self.user.following.all()
+    def total_following(self):
+        return self.user.following.all().count()
     
 
 @receiver(post_save, sender=User)

@@ -1,5 +1,5 @@
 import factory
-from posts.models import Post, Tag, PostLike
+from posts.models import Post, Tag, PostLike, Comment, CommentLike
 from tests.accounts.factories import UserFactory
 
 class TagFactory(factory.django.DjangoModelFactory):
@@ -25,4 +25,19 @@ class PostLikeFactory(factory.django.DjangoModelFactory):
     user = factory.SubFactory(UserFactory)
     post = factory.SubFactory(PostFactory)
 
+
+class CommentFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Comment
+
+    content = factory.Faker('text')
+    author = factory.SubFactory(UserFactory)        
+    post = factory.SubFactory(PostFactory)
     
+    
+class CommentLikeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CommentLike
+    
+    user = factory.SubFactory(UserFactory)
+    comment = factory.SubFactory(CommentFactory)

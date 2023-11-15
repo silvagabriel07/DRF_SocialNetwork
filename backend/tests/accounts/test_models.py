@@ -1,11 +1,11 @@
 from rest_framework.test import APITestCase 
 from accounts.models import User, Profile, Follow
 from tests.accounts.factories import UserFactory
-from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory
+from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory, CommentFactory, CommentLikeFactory
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
-class TestProfileFollowMethod(APITestCase):
+class TestProfileFollowMethods(APITestCase):
     def setUp(self) -> None:
         for i in range(1, 3):
             User.objects.create_user(username=f'user {i}', password=f'password{i}', email=f'email{i}@gmail.com')
@@ -63,22 +63,61 @@ class TestProfileFollowMethod(APITestCase):
         self.assertEqual(self.prof1.total_following, count_following)
         
 
-class TestProfileLikeMethod(APITestCase):
+class TestProfilePostMethods(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
+        self.user2 = UserFactory()
         self.post1 = PostFactory(author=self.user1)
     
-    def test_like_post_method_succesfully(self):
-        user2 = UserFactory()
-        user2.profile.like_post(self.post1)
+    def test_like_post_method_successfully(self):
+        self.user2.profile.like_post(self.post1)
         self.assertEqual(self.post1.likes.all().count(), 1)
         
-    def test_like_an_user_twice_fails(self):
-        user2 = UserFactory()
-        user2.profile.like_post(self.post1)
+    def test_like_post_twice_fails(self):
+        self.user2.profile.like_post(self.post1)
         with self.assertRaisesMessage(ValidationError, 'You have already liked this post.'):
-            user2.profile.like_post(self.post1)
+            self.user2.profile.like_post(self.post1)
 
+    def test_unlike_a_post_successfully(self):
+        PostLikeFactory(post=self.post1, user=self.user2)
+        self.assertEqual(self.post1.likes.all().count(), 1)
+        self.user2.profile.unlike_post(self.post1)
+        self.assertEqual(self.post1.likes.all().count(), 0)
+        
+    def test_unlike_a_post_that_user_did_not_like_fails(self):
+        with self.assertRaisesMessage(ValidationError, 'You did not like this post.'):
+            self.user2.profile.unlike_post(self.post1)
+    
+    def test_return_total_posts(self):
+        PostFactory(author=self.user1)
+        count_posts = self.user1.posts.all().count()
+        self.assertEqual(self.user1.profile.total_posts, count_posts)
+
+
+class TestProfileCommentMethods(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.user2 = UserFactory()
+        self.comment1 = CommentFactory(author=self.user1)
+
+    def test_like_comment_method_successfully(self):
+        self.user2.profile.like_comment(self.comment1)
+        self.assertEqual(self.comment1.likes.all().count(), 1)
+        
+    def test_like_comment_twice_fails(self):
+        self.user2.profile.like_comment(self.comment1)
+        with self.assertRaisesMessage(ValidationError, 'You have already liked this comment.'):
+            self.user2.profile.like_comment(self.comment1)
+
+    def test_unlike_a_comment_successfully(self):
+        CommentLikeFactory(comment=self.comment1, user=self.user2)
+        self.assertEqual(self.comment1.likes.all().count(), 1)
+        self.user2.profile.unlike_comment(self.comment1)
+        self.assertEqual(self.comment1.likes.all().count(), 0)
+        
+    def test_unlike_a_comment_that_user_did_not_like_fails(self):
+        with self.assertRaisesMessage(ValidationError, 'You did not like this comment.'):
+            self.user2.profile.unlike_comment(self.comment1)
 
 
 class TestFollow(APITestCase):

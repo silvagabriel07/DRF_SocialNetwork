@@ -58,13 +58,7 @@ class Profile(models.Model):
         return f'{self.name} {self.id}'
     
     # methods related to social network logic
-
-    def like_post(self, post):
-        try:
-            PostLike.objects.create(user=self.user, post=post)
-        except IntegrityError:
-            raise ValidationError("You have already liked this post.")
-            
+    # follow methods
     def follow(self, user):
         try:
             Follow.objects.create(follower=self.user, followed=user)
@@ -86,6 +80,39 @@ class Profile(models.Model):
     def total_following(self):
         return self.user.following.all().count()
     
+    # post methods    
+    def like_post(self, post):
+        try:
+            PostLike.objects.create(user=self.user, post=post)
+        except IntegrityError:
+            raise ValidationError("You have already liked this post.")
+        
+    def unlike_post(self, post):
+        try:
+            postlike = PostLike.objects.get(user=self.user, post=post)
+            postlike.delete()
+        except PostLike.DoesNotExist:
+            raise ValidationError("You did not like this post.")
+        
+    @property
+    def total_posts(self):
+        return self.user.posts.all().count()
+    
+    # comment methods
+    def like_comment(self, comment):
+        try:
+            CommentLike.objects.create(user=self.user, comment=comment)
+        except IntegrityError:
+            raise ValidationError("You have already liked this comment.")
+        
+    def unlike_comment(self, comment):
+        try:
+            commentlike = CommentLike.objects.get(user=self.user, comment=comment)
+            commentlike.delete()
+        except CommentLike.DoesNotExist:
+            raise ValidationError("You did not like this comment.")
+
+
 
 @receiver(post_save, sender=User)
 def signup_create_profile(sender, instance, created, **kwargs):

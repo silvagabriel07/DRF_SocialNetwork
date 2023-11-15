@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.conf import settings
-
+from datetime import datetime, timezone
 
 User = settings.AUTH_USER_MODEL
 # Create your models here.
@@ -23,6 +23,9 @@ class Post(models.Model):
     @property
     def total_likes(self):
         return self.likes.count()
+    @property
+    def total_comment(self):
+        return self.comments.count()
 
     @property
     def total_tags(self):
@@ -32,7 +35,7 @@ class Post(models.Model):
 class PostLike(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_liked')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='likes')
-
+    created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         unique_together = ('user', 'post')
         
@@ -41,18 +44,23 @@ class PostLike(models.Model):
 
 
 class Comment(models.Model):
-    content = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
     
     def __str__(self) -> str:
         return f'Comment | {self.author} -> {self.post}'
+
+    @property
+    def total_likes(self):
+        return self.likes.count()
 
 
 class CommentLike(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments_liked')
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         unique_together = ('user', 'comment')
             

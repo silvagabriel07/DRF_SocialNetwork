@@ -16,6 +16,7 @@ class User(AbstractUser):
     def __str__(self) -> str:
         return self.username
 
+
 class Follow(models.Model):
     follower = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE) # who follow
     followed = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE) # who is followed
@@ -23,6 +24,14 @@ class Follow(models.Model):
     def __str__(self):
         return f"{self.follower} follows {self.followed}"
     
+    def clean(self):
+        if self.followed == self.follower:
+            raise ValidationError('User cannot follow themselves.')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     class Meta:
         unique_together = ('follower', 'followed')
 
@@ -73,7 +82,7 @@ class Profile(models.Model):
     def following(self):
         return self.user.following.all()
     
-    
+
 @receiver(post_save, sender=User)
 def signup_create_profile(sender, instance, created, **kwargs):
     if created:

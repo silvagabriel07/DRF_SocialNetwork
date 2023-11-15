@@ -1,7 +1,9 @@
-from django.test import TestCase
-from accounts.models import User, Profile
+from rest_framework.test import APITestCase 
+from accounts.models import User, Profile, Follow
+from tests.accounts.factories import UserFactory
+from django.core.exceptions import ValidationError
 
-class TestProfile(TestCase):
+class TestProfile(APITestCase):
     def setUp(self) -> None:
         for i in range(1, 3):
             User.objects.create_user(username=f'user {i}', password=f'password{i}', email=f'email{i}@gmail.com')
@@ -55,3 +57,15 @@ class TestProfile(TestCase):
         all_following = self.prof1.user.following.all()
         self.assertEqual(list(self.prof1.following), list(all_following))
         
+
+class TestFollow(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.user2 = UserFactory()
+        
+    def test_user_cannot_follow_themselves(self):
+        with self.assertRaisesMessage(ValidationError, 'User cannot follow themselves.'):
+            Follow.objects.create(
+                follower=self.user1,
+                followed=self.user1
+            )

@@ -62,7 +62,7 @@ class UserUpdateSerializer(UserCreationSerializer):
         fields = ['id', 'username', 'password', 'old_password']
         extra_kwargs = {
             'id': {'read_only': True},
-            'password': {'write_only':True, 'required': False},
+            'password': {'write_only': True, 'required': False},
             'username': {'required': False},
             }
     

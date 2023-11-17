@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'is_active', 'profile_detail_url'
         ]
         extra_kwargs = {
+            'id': {'read_only': True},
             'is_active': {'read_only': True,},
         }
     
@@ -28,8 +29,8 @@ class UserCreationSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'password', 'is_active']
         extra_kwargs = {
-            'is_active': {'read_only': True,},
             'id': {'read_only': True},
+            'is_active': {'read_only': True,},
             'password': {'write_only':True}
             }
     
@@ -96,4 +97,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'bio', 'created_at', 'picture', 'user_detail_url',           
         ]
+        extra_kwargs = {
+            'id': {'read_only': True},
+        }
 

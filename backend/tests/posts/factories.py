@@ -6,7 +6,7 @@ class TagFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Tag
         
-    name = factory.Sequence(lambda n: f'tag{n}')
+    name = factory.Sequence(lambda n: f'tag{n+1}')
     
 
 class PostFactory(factory.django.DjangoModelFactory):

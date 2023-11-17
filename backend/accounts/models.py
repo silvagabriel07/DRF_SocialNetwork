@@ -113,7 +113,6 @@ class Profile(models.Model):
             raise ValidationError("You did not like this comment.")
 
 
-
 @receiver(post_save, sender=User)
 def signup_create_profile(sender, instance, created, **kwargs):
     if created:

@@ -1,7 +1,5 @@
 from django.db import models
-from django.core.exceptions import ValidationError
 from django.conf import settings
-from datetime import datetime, timezone
 
 User = settings.AUTH_USER_MODEL
 # Create your models here.
@@ -23,8 +21,9 @@ class Post(models.Model):
     @property
     def total_likes(self):
         return self.likes.count()
+    
     @property
-    def total_comment(self):
+    def total_comments(self):
         return self.comments.count()
 
     @property

@@ -49,14 +49,16 @@ class TestListCreatePost(APITestCase):
            'title': data['title'],
            'content': data['content'],
            'author': data['author'],
-        #    'nested_tags': data['tags'],     We alrready test this field separetely.
+        #    'nested_tags': data['tags'],     We already test this field separetely.
            'created_at': response.data['created_at'],
            'total_likes': 0,
            'total_tags': len(data['tags']),
            'total_comments': 0
         }
         
-        print(response.data)
         self.assertEqual(response.data, expected)
+        post_created = Post.objects.get(id=expected['id'])
+        self.assertEqual([tag.id for tag in post_created.tags.all()], data['tags'])
+        
 
         

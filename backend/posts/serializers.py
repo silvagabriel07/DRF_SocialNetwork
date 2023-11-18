@@ -16,8 +16,7 @@ class PostSerializer(serializers.ModelSerializer):
     def get_nested_tags(self, obj):
         ids = [tag.id for tag in obj.tags.all()]
         tags = Tag.objects.filter(id__in=ids)
-        serializer = TagSerializer(data=tags, many=True)
-        serializer.is_valid()
+        serializer = TagSerializer(tags, many=True)
         return serializer.data
         
     class Meta:

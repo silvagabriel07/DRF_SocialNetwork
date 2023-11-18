@@ -19,7 +19,7 @@ class TestPost(APITestCase):
     def test_return_total_comments(self):
         for c in range(3):
             CommentFactory(post=self.post)
-        self.assertEqual(self.post.total_comment, 3)
+        self.assertEqual(self.post.total_comments, 3)
 
         
 class TestComment(APITestCase):

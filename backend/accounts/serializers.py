@@ -84,20 +84,24 @@ class UserUpdateSerializer(UserCreationSerializer):
         return data
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user_detail_url = serializers.HyperlinkedRelatedField(
-        source='user',
-        many=False,
-        read_only=True,
-        view_name='user-detail',
-    )
+    user = UserSerializer()
     created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S.%fZ", read_only=True)    
 
     class Meta:
         model = Profile
         fields = [
-            'id', 'name', 'bio', 'created_at', 'picture', 'user_detail_url',           
+            'id', 'name', 'bio', 'created_at', 'picture', 'user', 'total_posts', 'total_followers', 'total_following'        
         ]
         extra_kwargs = {
             'id': {'read_only': True},
+            'user': {'read_only': True},
+            'created_at': {'read_only': True},
         }
-
+        
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.bio = validated_data.get('bio',instance.bio)
+        
+        instance.picture = validated_data.get('picture', instance.picture)
+        instance.save()
+        return instance

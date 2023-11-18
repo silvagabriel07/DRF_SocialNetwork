@@ -4,6 +4,9 @@ from accounts.models import Profile, User
 from tests.accounts.factories import UserFactory
 from accounts.serializers import UserSerializer, ProfileSerializer
 from django.urls import reverse
+from django.test import override_settings
+from django.core.files.uploadedfile import SimpleUploadedFile
+import tempfile
 
 class TestUserDetail(APITestCase):
     def setUp(self) -> None:
@@ -175,3 +178,75 @@ class TestProfileDetail(APITestCase):
         serializer = ProfileSerializer(self.profile, context={'request': response.wsgi_request})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
+
+
+class TestProfileList(APITestCase):
+    def setUp(self) -> None:
+        UserFactory.create_batch(3)
+        self.url = reverse('profile-list')
+    
+    def test_data_listed_returned(self):
+        response = self.client.get(self.url)
+        all_profiles = Profile.objects.all() 
+        serializer = ProfileSerializer(all_profiles, many=True, context={'request': response.wsgi_request})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
+
+
+class TestProfileUpdate(APITestCase):
+    def setUp(self) -> None:
+        user = UserFactory()
+        self.client.force_login(user)
+        self.profile = Profile.objects.get(user=user)
+        self.url = reverse('profile-update', args=[self.profile.id])
+        
+    def test_patch_update_name_and_bio(self):
+        data = {
+            'name': 'newname',
+            'bio': 'new bio sla.',
+        }
+        expected = {
+            'name': data['name'],
+            'bio': data['bio'],
+            'picture': self.profile.picture.url.replace('http://testserver', ''),
+        }
+        response = self.client.patch(self.url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], expected['name'])
+        self.assertEqual(response.data['bio'], expected['bio'])
+        self.assertEqual(response.data['picture'].replace(
+            'http://testserver', ''), expected['picture'])
+        
+
+    @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+    def test_patch_update_picture(self):
+        data = {
+            'picture': SimpleUploadedFile("test_image.jpg", b"file_content", content_type="image/jpeg"),
+        }
+        expected = {
+            'picture': data['picture'].name,
+        }
+        response = self.client.patch(self.url, data=data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['picture'].split('/')[-1], expected['picture'])
+        self.profile.refresh_from_db()
+        self.assertEqual((self.profile.picture.name).split('/')[-1], expected['picture'])
+    
+    @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+    def test_put_update_profile_must_belong_to_requesting_user(self):
+        self.client.logout()
+        another_user = UserFactory()
+        self.client.force_login(another_user)
+        data = {
+            'name': 'newname',
+            'bio': 'new bio sla.',
+            'picture': SimpleUploadedFile("test_image.jpg", b"file_content", content_type="image/jpeg"),
+        }
+        expected = {
+            'name': data['name'],
+            'bio': data['bio'],
+            'picture': data['picture'].name,
+        }
+        response = self.client.patch(self.url, data=data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        

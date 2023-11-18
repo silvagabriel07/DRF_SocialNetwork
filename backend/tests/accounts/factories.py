@@ -1,5 +1,5 @@
 import factory
-from accounts.models import User
+from accounts.models import User, Follow
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -11,3 +11,11 @@ class UserFactory(factory.django.DjangoModelFactory):
     password = factory.django.Password('ConfPassw123@')
 
 
+class FollowFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Follow
+        
+    followed = factory.SubFactory(UserFactory)
+    follower = factory.SubFactory(UserFactory)
+    
+    

@@ -63,3 +63,24 @@ class ProfileDetail(generics.RetrieveAPIView):
     
 profile_detail_view = ProfileDetail.as_view()
 
+
+class ProfileList(generics.ListAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    
+profile_list_view = ProfileList.as_view()
+
+
+class ProfileUpdate(generics.UpdateAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    
+    def update(self, request, *args, **kwargs):
+        profile = self.get_object()
+
+        if not request.user == profile.user:
+            error_response = {'request.user': 'You are not authorized to perform this action.'}
+            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
+        return super().update(request, *args, **kwargs)
+    
+profile_update_view = ProfileUpdate.as_view()

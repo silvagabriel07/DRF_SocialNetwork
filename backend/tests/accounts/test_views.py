@@ -342,3 +342,37 @@ class TestUnfollowUser(APITestCase):
         self.assertEqual(str(response.data['detail']), expected['detail'])
         self.assertEqual(self.user1.following.all().count(), 0)
         
+
+class TestFollowerList(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.all_followers = []
+        for follow in range(3):
+            self.all_followers.append(FollowFactory(followed=self.user1))
+        self.client.force_login(self.user1)
+    
+    def test_list_all_followers_users_of_a_user(self):
+        response = self.client.get(reverse('follower-list', args=[self.user1.id]))
+        expected = []
+        for follow in self.all_followers:
+            data = {'user': UserSerializer(follow.follower, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
+            expected.append(data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected)
+
+class TestFollowedList(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.all_following = []
+        for follow in range(3):
+            self.all_following.append(FollowFactory(follower=self.user1))
+        self.client.force_login(self.user1)
+    
+    def test_list_all_followed_users_of_a_user(self):
+        response = self.client.get(reverse('followed-list', args=[self.user1.id]))
+        expected = []
+        for follow in self.all_following:
+            data = {'user': UserSerializer(follow.followed, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
+            expected.append(data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected)

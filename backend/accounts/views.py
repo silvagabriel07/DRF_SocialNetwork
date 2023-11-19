@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.views import Response, APIView
-from accounts.models import User, Profile
-from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer, FollowUserSerializer
+from accounts.models import User, Profile, Follow
+from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer, FollowUserSerializer, FollowerSerializer, FollowedSerializer
 # Create your views here.
 
 class UserDetail(generics.RetrieveAPIView):
@@ -86,7 +86,7 @@ class ProfileUpdate(generics.UpdateAPIView):
 profile_update_view = ProfileUpdate.as_view()
 
 
-class FollowUserView(APIView):
+class FollowUser(APIView):
     def post(self, request, pk):
         request_profile = request.user.profile
         try:
@@ -100,9 +100,9 @@ class FollowUserView(APIView):
         serializer = FollowUserSerializer({'message': 'You have successfully followed the user.'})
         return Response(serializer.data, status=status.HTTP_200_OK)
             
-follow_user_view = FollowUserView.as_view()
+follow_user_view = FollowUser.as_view()
 
-class UnfollowUserView(APIView):
+class UnfollowUser(APIView):
     def post(self, request, pk):
         request_profile = request.user.profile
         try:
@@ -116,4 +116,24 @@ class UnfollowUserView(APIView):
         serializer = FollowUserSerializer({'message': 'You have successfully unfollowed the user.'})
         return Response(serializer.data, status=status.HTTP_200_OK)
             
-unfollow_user_view = UnfollowUserView.as_view()
+unfollow_user_view = UnfollowUser.as_view()
+
+
+class FollowerList(generics.ListAPIView):
+    serializer_class = FollowerSerializer
+    
+    def get_queryset(self):
+        user_followed_id = self.kwargs['pk']
+        return Follow.objects.filter(followed_id=user_followed_id)
+         
+follower_list_view = FollowerList.as_view()
+
+
+class FollowedList(generics.ListAPIView):
+    serializer_class = FollowedSerializer
+    
+    def get_queryset(self):
+        user_follower_id = self.kwargs['pk']
+        return Follow.objects.filter(follower_id=user_follower_id)
+         
+followed_list_view = FollowedList.as_view()

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from accounts.models import User, Profile
+from accounts.models import User, Profile, Follow
 import django.contrib.auth.password_validation as validators
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import check_password
@@ -109,3 +109,17 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class FollowUserSerializer(serializers.Serializer):
     message = serializers.CharField()
+
+
+class FollowerSerializer(serializers.ModelSerializer):
+    user = UserSerializer(source='follower')    
+    class Meta:
+        model = Follow
+        fields = ['user', 'created_at']
+
+
+class FollowedSerializer(serializers.ModelSerializer):
+    user = UserSerializer(source='followed')    
+    class Meta:
+        model = Follow
+        fields = ['user', 'created_at']

@@ -250,3 +250,4 @@ class TestProfileUpdate(APITestCase):
         response = self.client.patch(self.url, data=data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
+

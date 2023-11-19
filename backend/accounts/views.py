@@ -1,5 +1,5 @@
-from rest_framework import generics, permissions, serializers, status
-from rest_framework.views import Response
+from rest_framework import generics, permissions, status
+from rest_framework.views import Response, APIView
 from accounts.models import User, Profile
 from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer
 # Create your views here.
@@ -84,3 +84,5 @@ class ProfileUpdate(generics.UpdateAPIView):
         return super().update(request, *args, **kwargs)
     
 profile_update_view = ProfileUpdate.as_view()
+
+

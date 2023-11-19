@@ -12,4 +12,5 @@ urlpatterns = [
     path('profile-update/<int:pk>/', views.profile_update_view, name='profile-update'),
     path('', views.profile_list_view, name='profile-list'),
     
+    
 ]

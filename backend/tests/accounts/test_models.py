@@ -2,7 +2,7 @@ from rest_framework.test import APITestCase
 from accounts.models import User, Profile, Follow
 from tests.accounts.factories import UserFactory
 from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory, CommentFactory, CommentLikeFactory
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
 class TestProfileFollowMethods(APITestCase):

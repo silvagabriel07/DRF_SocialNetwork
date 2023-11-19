@@ -34,7 +34,7 @@ class TestProfileFollowMethods(APITestCase):
         self.assertFalse(all_following.exists())
         
     def test_follow_method_self_following_fails(self):
-        with self.assertRaisesMessage(ValidationError, 'User cannot follow themselves.'):
+        with self.assertRaisesMessage(ValidationError, 'You can not follow yourself.'):
             self.prof1.follow(self.prof1.user)
 
     def test_follow_method_user_followed_twice_by_the_same_user(self):
@@ -49,7 +49,7 @@ class TestProfileFollowMethods(APITestCase):
         self.assertFalse(all_followers.exists())
 
     def test_unfollow_method_user_not_following(self):
-        with self.assertRaisesMessage(ValidationError, 'You are not following this user.'):
+        with self.assertRaisesMessage(ValidationError, 'You were not following this user.'):
             self.prof1.unfollow(self.user2)
             
     def test_total_followers_property(self):
@@ -126,7 +126,7 @@ class TestFollow(APITestCase):
         self.user2 = UserFactory()
         
     def test_user_cannot_follow_themselves(self):
-        with self.assertRaisesMessage(ValidationError, 'User cannot follow themselves.'):
+        with self.assertRaisesMessage(ValidationError, 'You can not follow yourself.'):
             Follow.objects.create(
                 follower=self.user1,
                 followed=self.user1

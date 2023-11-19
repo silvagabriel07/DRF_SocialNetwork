@@ -105,3 +105,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.picture = validated_data.get('picture', instance.picture)
         instance.save()
         return instance
+
+
+class FollowUserSerializer(serializers.Serializer):
+    message = serializers.CharField()

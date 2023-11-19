@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
-from accounts.models import Profile, User
-from tests.accounts.factories import UserFactory
+from accounts.models import Profile, User, Follow
+from tests.accounts.factories import UserFactory, FollowFactory
 from accounts.serializers import UserSerializer, ProfileSerializer
 from django.urls import reverse
 from django.test import override_settings
@@ -251,3 +251,94 @@ class TestProfileUpdate(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
 
+class TestFollowUser(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.user2 = UserFactory()
+        self.client.force_login(self.user1)
+    
+    def test_follow_user_successfully(self):
+        url = reverse('follow-user', args=[self.user2.id])
+        response = self.client.post(url)
+        expected = {
+            'message': 'You have successfully followed the user.'        
+        }
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected)
+        self.user1.refresh_from_db()
+        self.assertEqual(self.user1.following.all().count(), 1)
+    
+    def test_follow_user_with_pk_of_a_non_existing_user_fails(self):
+        invalid_pk = 10
+        url = reverse('follow-user', args=[invalid_pk])
+        response = self.client.post(url)
+        expected = {
+            'detail': 'The user does not exist.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.user1.refresh_from_db()
+        self.assertEqual(self.user1.following.all().count(), 0)
+    
+    def test_follow_user_already_followed_fails(self):
+        FollowFactory(follower=self.user1, followed=self.user2)
+        url = reverse('follow-user', args=[self.user2.id])
+        response = self.client.post(url)
+        expected = {
+            'detail': 'You are already following this user.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.assertEqual(self.user1.following.all().count(), 1)
+        
+    def test_follow_yourself_fails(self):
+        url = reverse('follow-user', args=[self.user1.id])
+        response = self.client.post(url)
+        expected = {
+            'detail': 'You can not follow yourself.'
+        }
+        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.assertEqual(self.user1.following.all().count(), 0)
+
+
+class TestUnfollowUser(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.user2 = UserFactory()
+        self.client.force_login(self.user1)
+    
+    def test_unfollow_user_successfully(self):
+        FollowFactory(follower=self.user1, followed=self.user2)
+        url = reverse('unfollow-user', args=[self.user2.id])
+        response = self.client.post(url)
+        print(response.data)
+        expected = {
+            'message': 'You have successfully unfollowed the user.'        
+        }
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected)
+        self.user1.refresh_from_db()
+        self.assertEqual(self.user1.following.all().count(), 0)
+    
+    def test_unfollow_user_with_pk_of_a_non_existing_user_fails(self):
+        invalid_pk = 10
+        url = reverse('unfollow-user', args=[invalid_pk])
+        response = self.client.post(url)
+        expected = {
+            'detail': 'The user does not exist.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.user1.refresh_from_db()
+        self.assertEqual(self.user1.following.all().count(), 0)
+    
+    def test_unfollow_user_that_is_not_followed_fails(self):
+        url = reverse('unfollow-user', args=[self.user2.id])
+        response = self.client.post(url)
+        expected = {
+            'detail': 'You were not following this user.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.assertEqual(self.user1.following.all().count(), 0)
+        

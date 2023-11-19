@@ -31,7 +31,7 @@ class Follow(models.Model):
     
     def clean(self):
         if self.followed == self.follower:
-            raise ValidationError({"detail": "User cannot follow themselves."})
+            raise ValidationError({"detail": "You can not follow yourself."})
 
 
     def save(self, *args, **kwargs):
@@ -45,7 +45,7 @@ class Follow(models.Model):
 @receiver(pre_save, sender=Follow)
 def check_self_following(sender, instance, **kwargs):
     if instance.follower == instance.followed:
-       raise ValidationError({"detail": "You can not follow yourself"})
+       raise ValidationError({"detail": "You can not follow yourself."})
 
 
 
@@ -68,13 +68,12 @@ class Profile(models.Model):
         except IntegrityError as err:
             raise ValidationError({"detail": "You are already following this user.", "error": str(err)})
 
-    
     def unfollow(self, user):
         try:
             follow = Follow.objects.get(follower=self.user, followed=user)
             follow.delete()
         except Follow.DoesNotExist as err:
-            raise ValidationError({"detail": "You are not following this user.", "error": str(err)})
+            raise ValidationError({"detail": "You were not following this user.", "error": str(err)})
 
     
     @property

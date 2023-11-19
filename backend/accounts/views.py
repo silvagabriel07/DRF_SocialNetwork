@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.views import Response, APIView
 from accounts.models import User, Profile
-from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer
+from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer, FollowUserSerializer
 # Create your views here.
 
 class UserDetail(generics.RetrieveAPIView):
@@ -86,3 +86,34 @@ class ProfileUpdate(generics.UpdateAPIView):
 profile_update_view = ProfileUpdate.as_view()
 
 
+class FollowUserView(APIView):
+    def post(self, request, pk):
+        request_profile = request.user.profile
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'detail': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        if request_profile.user.following.filter(followed=user).exists():
+            return Response({'detail': 'You are already following this user.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        request_profile.follow(user)
+        serializer = FollowUserSerializer({'message': 'You have successfully followed the user.'})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+            
+follow_user_view = FollowUserView.as_view()
+
+class UnfollowUserView(APIView):
+    def post(self, request, pk):
+        request_profile = request.user.profile
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'detail': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        if not request_profile.user.following.filter(followed=user).exists():
+            return Response({'detail': 'You were not following this user.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        request_profile.unfollow(user)
+        serializer = FollowUserSerializer({'message': 'You have successfully unfollowed the user.'})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+            
+unfollow_user_view = UnfollowUserView.as_view()

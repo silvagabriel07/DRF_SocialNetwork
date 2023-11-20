@@ -63,7 +63,6 @@ class TestUserUpdateSerializer(APITestCase):
     def setUp(self) -> None:
         self.old_password = 'senhalegal123@'
         self.user = UserFactory(password=self.old_password)
-        self.client.force_login(self.user)
     
     def test_data_updated_serialized(self):
         data = {
@@ -193,4 +192,5 @@ class TestFollowedSerializer(APITestCase):
             data = {'user': UserSerializer(follow.followed, context={'request': request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
         self.assertEqual(serializer.data, expected)
+        
         

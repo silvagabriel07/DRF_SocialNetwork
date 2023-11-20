@@ -7,7 +7,7 @@ from posts.serializers import PostSerializer
 from django.urls import reverse
 from rest_framework import status
 
-class TestListCreatePost(APITestCase):
+class TestPostListCreate(APITestCase):
     def setUp(self) -> None:
         self.url = reverse('post-list-create')
         self.user1 = UserFactory()
@@ -58,4 +58,145 @@ class TestListCreatePost(APITestCase):
         self.assertEqual(response.data, expected)
         post_created = Post.objects.get(id=expected['id'])
         self.assertEqual([tag.id for tag in post_created.tags.all()], data['tags'])
+        
+    def test_create_post_successfully(self):
+        data = {
+            'title': 'title 1',
+            'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+            'tags': [self.tags[0].id, self.tags[1].id, self.tags[2].id, ],
+        }
+        response = self.client.post(self.url, data=data, format='json')
+        response.data.pop('nested_tags')
+        expected = {
+           'id': response.data['id'],
+           'title': data['title'],
+           'content': data['content'],
+           'author': self.user1.id,
+        #    'nested_tags': data['tags'],     We already test this field separetely.
+           'created_at': response.data['created_at'],
+           'total_likes': 0,
+           'total_tags': len(data['tags']),
+           'total_comments': 0
+        }
+        
+        self.assertEqual(response.data, expected)
+        post_created = Post.objects.get(id=expected['id'])
+        self.assertEqual([tag.id for tag in post_created.tags.all()], data['tags'])
+
+
+class TestPostDetail(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.client.force_login(self.user1)
+        self.url = reverse('post-detail', args=[self.user1.id])
+
+        self.tags = TagFactory.create_batch(3)
+
+    def test_return_data(self):
+        post = PostFactory()
+        response = self.client.get(self.url)
+        serializer = PostSerializer(post)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
+        
+
+class TestPostUpdate(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.post = PostFactory(author=self.user1)
+        self.client.force_login(self.user1)
+        self.url = reverse('post-update', args=[self.post.id])
+    
+    def test_patch_title_updated(self):
+        data = {
+            'title': 'Title updated'
+        }
+        response = self.client.patch(self.url, data=data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['title'], data['title'])
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.title, data['title'])
+
+    def test_patch_content_updated(self):
+        data = {
+            'content': 'Content updated'
+        }
+        response = self.client.patch(self.url, data=data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['content'], data['content'])
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.content, data['content'])
+        
+    def test_patch_tags_updated(self):
+        all_tags = TagFactory.create_batch(3)
+        tags = [tag.id for tag in all_tags]
+        data = {
+            'tags': tags
+        }
+        response = self.client.patch(self.url, data=data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['nested_tags'], [{'id': tag.id, 'name': tag.name} for tag in all_tags])
+        self.post.refresh_from_db()
+        self.assertEqual(list(self.post.tags.all()), all_tags)
+    
+    def test_put_return_data(self):
+        all_tags = TagFactory.create_batch(3)
+        tags = [tag.id for tag in all_tags]
+        data = {
+            'title': 'Title updated',
+            'content': 'Content updated',
+            'tags': tags
+        }
+        response = self.client.patch(self.url, data=data)
+        expected = {
+           'id': self.post.id,
+           'title': data['title'],
+           'content': data['content'],
+           'author': self.user1.id,
+           'nested_tags': [{'id': tag.id, 'name': tag.name} for tag in all_tags],
+           'created_at': response.data['created_at'],
+           'total_likes': 0,
+           'total_tags': len(data['tags']),
+           'total_comments': 0
+        }
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected)
+    
+    def test_update_post_user_of_the_request_must_be_the_owner(self):
+        another_user = UserFactory()
+        self.client.logout()
+        self.client.force_login(another_user)
+        data = {
+            'title': 'Title updated',
+            'content': 'Content updated',
+        }
+        response = self.client.patch(self.url, data=data)
+        expected = {
+            'request.user': 'You are not authorized to perform this action.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data, expected)
+
+
+class TestPostDelete(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.another_user = UserFactory()
+        self.post = PostFactory(author=self.user1)
+        self.url = reverse('post-delete', args=[self.post.id])
+    
+    def test_delete_post_user_of_the_request_must_be_the_owner(self):
+        self.client.force_login(self.another_user)
+        response = self.client.delete(self.url)
+        expected = {
+            'request.user': 'You are not authorized to perform this action.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data, expected)
+
+    def test_delete_post_successfully(self):
+        self.client.force_login(self.user1)
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Post.objects.all().exists())
         

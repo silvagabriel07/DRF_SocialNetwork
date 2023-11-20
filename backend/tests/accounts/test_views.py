@@ -263,7 +263,7 @@ class TestFollowUser(APITestCase):
         expected = {
             'message': 'You have successfully followed the user.'        
         }
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data, expected)
         self.user1.refresh_from_db()
         self.assertEqual(self.user1.following.all().count(), 1)
@@ -297,6 +297,7 @@ class TestFollowUser(APITestCase):
         expected = {
             'detail': 'You can not follow yourself.'
         }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(str(response.data['detail']), expected['detail'])
         self.assertEqual(self.user1.following.all().count(), 0)
 
@@ -310,8 +311,7 @@ class TestUnfollowUser(APITestCase):
     def test_unfollow_user_successfully(self):
         FollowFactory(follower=self.user1, followed=self.user2)
         url = reverse('unfollow-user', args=[self.user2.id])
-        response = self.client.post(url)
-        print(response.data)
+        response = self.client.delete(url)
         expected = {
             'message': 'You have successfully unfollowed the user.'        
         }
@@ -323,7 +323,7 @@ class TestUnfollowUser(APITestCase):
     def test_unfollow_user_with_pk_of_a_non_existing_user_fails(self):
         invalid_pk = 10
         url = reverse('unfollow-user', args=[invalid_pk])
-        response = self.client.post(url)
+        response = self.client.delete(url)
         expected = {
             'detail': 'The user does not exist.'
         }
@@ -334,7 +334,7 @@ class TestUnfollowUser(APITestCase):
     
     def test_unfollow_user_that_is_not_followed_fails(self):
         url = reverse('unfollow-user', args=[self.user2.id])
-        response = self.client.post(url)
+        response = self.client.delete(url)
         expected = {
             'detail': 'You were not following this user.'
         }
@@ -376,3 +376,5 @@ class TestFollowedList(APITestCase):
             expected.append(data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, expected)
+        
+        

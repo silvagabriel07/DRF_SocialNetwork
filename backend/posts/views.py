@@ -1,6 +1,6 @@
 from rest_framework import generics, status
-from rest_framework.views import Response
-from posts.models import Post, Tag
+from rest_framework.views import Response, APIView
+from posts.models import Post, Tag, Comment
 from posts.serializers import PostSerializer, PostUpdateSerializer
 # Create your views here.
 
@@ -24,10 +24,7 @@ class PostUpdate(generics.UpdateAPIView):
     
     def update(self, request, *args, **kwargs):
         post = self.get_object()
-        print(post.author)
         if not request.user == post.author:
-            print('qqaa')
-            print(request.user)
             error_response = {'request.user': 'You are not authorized to perform this action.'}
             return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -46,6 +43,8 @@ class PostDelete(generics.DestroyAPIView):
         if not request.user == post.author:
             error_response = {'request.user': 'You are not authorized to perform this action.'}
             return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
+        
         return super().destroy(request, *args, **kwargs)
 
 post_delete_view = PostDelete.as_view()
+

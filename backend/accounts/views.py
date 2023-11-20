@@ -86,7 +86,7 @@ class ProfileUpdate(generics.UpdateAPIView):
 profile_update_view = ProfileUpdate.as_view()
 
 
-class FollowUser(APIView):
+class FollowUser(generics.CreateAPIView):
     def post(self, request, pk):
         request_profile = request.user.profile
         try:
@@ -98,12 +98,12 @@ class FollowUser(APIView):
 
         request_profile.follow(user)
         serializer = FollowUserSerializer({'message': 'You have successfully followed the user.'})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
             
 follow_user_view = FollowUser.as_view()
 
-class UnfollowUser(APIView):
-    def post(self, request, pk):
+class UnfollowUser(generics.DestroyAPIView):
+    def delete(self, request, pk):
         request_profile = request.user.profile
         try:
             user = User.objects.get(pk=pk)

@@ -89,14 +89,14 @@ class Profile(models.Model):
         try:
             PostLike.objects.create(user=self.user, post=post)
         except IntegrityError as err:
-            raise ValidationError({"detail": "You have already liked this post.", "error": str(err)})
+            raise ValidationError({"detail": "You are already liking this post.", "error": str(err)})
 
-    def unlike_post(self, post):
+    def dislike_post(self, post):
         try:
             postlike = PostLike.objects.get(user=self.user, post=post)
             postlike.delete()
         except PostLike.DoesNotExist as err:
-            raise ValidationError({"detail": "You did not like this post.", "error": str(err)})
+            raise ValidationError({"detail": "You were not liking this post.", "error": str(err)})
         
     @property
     def total_posts(self):
@@ -109,7 +109,7 @@ class Profile(models.Model):
         except IntegrityError as err:
             raise ValidationError({"detail": "You have already liked this comment.", "error": str(err)})
 
-    def unlike_comment(self, comment):
+    def dislike_comment(self, comment):
         try:
             commentlike = CommentLike.objects.get(user=self.user, comment=comment)
             commentlike.delete()

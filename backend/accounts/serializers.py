@@ -107,7 +107,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         return instance
 
 
-class FollowUserSerializer(serializers.Serializer):
+class MessageSerializer(serializers.Serializer):
     message = serializers.CharField()
 
 

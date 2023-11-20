@@ -8,6 +8,10 @@ class TagSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class LikePostSerializer(serializers.Serializer):
+    message = serializers.CharField()
+
+
 class PostSerializer(serializers.ModelSerializer):
     # 'nested_tags' field is just to be see the tags and return them serialized 
     # 'tags' field expects a list of tag ids, and it's what we use as 'input'

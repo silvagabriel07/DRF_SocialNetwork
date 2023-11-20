@@ -1,5 +1,5 @@
 from rest_framework.test import APITestCase
-from tests.posts.factories import PostFactory, TagFactory
+from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory
 from tests.accounts.factories import UserFactory
 
 from posts.models import Post
@@ -201,4 +201,78 @@ class TestPostDelete(APITestCase):
         self.assertFalse(Post.objects.all().exists())
 
 
-        
+class TestLikePost(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.user2 = UserFactory()
+        self.post = PostFactory(author=self.user2)
+        self.client.force_login(self.user1)
+        self.url = reverse('like-post', args=[self.post.id])
+
+    def test_like_post_successfully(self):
+        response = self.client.post(self.url)
+        expected = {
+            'message': 'You have successfully liked the post.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data, expected)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.likes.all().count(), 1)
+
+    def test_like_post_already_liked_fails(self):
+        PostLikeFactory(post=self.post, user=self.user1)
+        response = self.client.post(self.url)
+        expected = {
+            'detail': 'You are already liking this post.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, expected)
+        self.assertEqual(self.post.likes.all().count(), 1)
+
+    def test_like_post_with_pk_of_a_non_existing_post_fails(self):
+        invalid_pk = 10
+        url = reverse('like-post', args=[invalid_pk])
+        response = self.client.post(url)
+        expected = {
+            'detail': 'The post does not exist.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data, expected)
+
+
+class TestDislikePost(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.user2 = UserFactory()
+        self.post = PostFactory(author=self.user2)
+        self.client.force_login(self.user1)
+        self.url = reverse('dislike-post', args=[self.post.id])
+
+    def test_dislike_post_successfully(self):
+        PostLikeFactory(user=self.user1, post=self.post)
+        response = self.client.delete(self.url)
+        expected = {
+            'message': 'You have successfully disliked the post.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.likes.all().count(), 0)
+
+    def test_dislike_post_that_is_not_liked_fails(self):
+        response = self.client.delete(self.url)
+        expected = {
+            'detail': 'You were not liking this post.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, expected)
+
+    def test_like_post_with_pk_of_a_non_existing_post_fails(self):
+        invalid_pk = 10
+        url = reverse('dislike-post', args=[invalid_pk])
+        response = self.client.delete(url)
+        expected = {
+            'detail': 'The post does not exist.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data, expected)

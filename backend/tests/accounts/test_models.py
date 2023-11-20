@@ -78,15 +78,15 @@ class TestProfilePostMethods(APITestCase):
         with self.assertRaisesMessage(ValidationError, 'You have already liked this post.'):
             self.user2.profile.like_post(self.post1)
 
-    def test_unlike_a_post_successfully(self):
+    def test_dislike_a_post_successfully(self):
         PostLikeFactory(post=self.post1, user=self.user2)
         self.assertEqual(self.post1.likes.all().count(), 1)
-        self.user2.profile.unlike_post(self.post1)
+        self.user2.profile.dislike_post(self.post1)
         self.assertEqual(self.post1.likes.all().count(), 0)
         
-    def test_unlike_a_post_that_user_did_not_like_fails(self):
-        with self.assertRaisesMessage(ValidationError, 'You did not like this post.'):
-            self.user2.profile.unlike_post(self.post1)
+    def test_dislike_a_post_that_user_did_not_like_fails(self):
+        with self.assertRaisesMessage(ValidationError, 'You were not liking this post.'):
+            self.user2.profile.dislike_post(self.post1)
     
     def test_return_total_posts(self):
         PostFactory(author=self.user1)
@@ -109,15 +109,15 @@ class TestProfileCommentMethods(APITestCase):
         with self.assertRaisesMessage(ValidationError, 'You have already liked this comment.'):
             self.user2.profile.like_comment(self.comment1)
 
-    def test_unlike_a_comment_successfully(self):
+    def test_dislike_a_comment_successfully(self):
         CommentLikeFactory(comment=self.comment1, user=self.user2)
         self.assertEqual(self.comment1.likes.all().count(), 1)
-        self.user2.profile.unlike_comment(self.comment1)
+        self.user2.profile.dislike_comment(self.comment1)
         self.assertEqual(self.comment1.likes.all().count(), 0)
         
-    def test_unlike_a_comment_that_user_did_not_like_fails(self):
+    def test_dislike_a_comment_that_user_did_not_like_fails(self):
         with self.assertRaisesMessage(ValidationError, 'You did not like this comment.'):
-            self.user2.profile.unlike_comment(self.comment1)
+            self.user2.profile.dislike_comment(self.comment1)
 
 
 class TestFollow(APITestCase):

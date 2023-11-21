@@ -1,6 +1,6 @@
 from rest_framework.test import APITestCase, APIRequestFactory
-from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer
-from tests.posts.factories import PostFactory, TagFactory, CommentFactory
+from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
+from tests.posts.factories import PostFactory, TagFactory, CommentFactory, CommentLikeFactory, PostLikeFactory
 from tests.accounts.factories import UserFactory
 
 
@@ -121,3 +121,35 @@ class TestCommentSerializer(APITestCase):
         self.assertEqual(comment_instance.author.id, self.user1.id)
         
         
+class TestCommentLikeSerializer(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.comment = CommentFactory()
+
+    def test_data_returned(self):
+        commentlike = CommentLikeFactory(user=self.user1, comment=self.comment)
+        expected = {
+            'id': commentlike.id,
+            'comment': self.comment.id,
+            'user': self.user1.id,
+            'created_at': commentlike.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+        }
+        serializer = CommentLikeSerializer(commentlike)
+        self.assertEqual(serializer.data, expected)
+        
+
+class TestPostLikeSerializer(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.post = PostFactory()
+
+    def test_data_returned(self):
+        postlike = PostLikeFactory(user=self.user1, post=self.post)
+        expected = {
+            'id': postlike.id,
+            'post': self.post.id,
+            'user': self.user1.id,
+            'created_at': postlike.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+        }
+        serializer = PostLikeSerializer(postlike)
+        self.assertEqual(serializer.data, expected)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from posts.models import Post, Tag, Comment
+from posts.models import Post, Tag, Comment, CommentLike, PostLike
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -85,3 +85,16 @@ class CommentSerializer(serializers.ModelSerializer):
         validated_data['author'] = request.user
         comment = Comment.objects.create(**validated_data)
         return comment
+    
+    
+class CommentLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommentLike
+        fields = '__all__'
+
+
+class PostLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostLike
+        fields = '__all__'
+        

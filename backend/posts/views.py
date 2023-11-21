@@ -1,7 +1,7 @@
 from rest_framework import generics, status
 from rest_framework.views import Response, APIView
-from posts.models import Post, Tag, Comment
-from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer
+from posts.models import Post, Tag, Comment, CommentLike, PostLike
+from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
 from accounts.serializers import MessageSerializer
 # Create your views here.
 
@@ -173,3 +173,26 @@ class DislikeComment(generics.DestroyAPIView):
             
 dislike_comment_view = DislikeComment.as_view()
 
+
+class CommentLikeList(generics.ListAPIView):
+    queryset = CommentLike.objects.all()
+    serializer_class = CommentLikeSerializer
+    
+    def get_queryset(self):
+        comment_id = self.kwargs['pk']
+        qs = super().get_queryset()
+        return qs.filter(comment_id=comment_id)
+        
+comment_like_list_view = CommentLikeList.as_view()
+
+
+class PostLikeList(generics.ListAPIView):
+    queryset = PostLike.objects.all()
+    serializer_class = PostLikeSerializer
+    
+    def get_queryset(self):
+        post_id = self.kwargs['pk']
+        qs = super().get_queryset()
+        return qs.filter(post_id=post_id)
+        
+post_like_list_view = PostLikeList.as_view()

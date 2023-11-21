@@ -6,6 +6,7 @@ urlpatterns = [
     path('post-detail/<int:pk>/', views.post_detail_view, name='post-detail'),
     path('post-update/<int:pk>/', views.post_update_view, name='post-update'),
     path('post-delete/<int:pk>/', views.post_delete_view, name='post-delete'),
+    path('like-list/<int:pk>/', views.post_like_list_view, name='post-like-list'),    
     path('tag-list/', views.tag_list_view, name='tag-list'),
 
     path('like-post/<int:pk>/', views.like_post_view, name='like-post'),
@@ -17,5 +18,6 @@ urlpatterns = [
 
     path('like-comment/<int:pk>/', views.like_comment_view, name='like-comment'),
     path('dislike-comment/<int:pk>/', views.dislike_comment_view, name='dislike-comment'),
+    path('comment/like-list/<int:pk>/', views.comment_like_list_view, name='comment-like-list'),    
 
 ]

@@ -74,8 +74,8 @@ class TestProfilePostMethods(APITestCase):
         self.assertEqual(self.post1.likes.all().count(), 1)
         
     def test_like_post_twice_fails(self):
-        self.user2.profile.like_post(self.post1)
-        with self.assertRaisesMessage(ValidationError, 'You have already liked this post.'):
+        PostLikeFactory(user=self.user2, post=self.post1)
+        with self.assertRaisesMessage(ValidationError, 'You are already liking this post.'):
             self.user2.profile.like_post(self.post1)
 
     def test_dislike_a_post_successfully(self):

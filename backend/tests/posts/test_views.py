@@ -3,7 +3,7 @@ from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory, Comm
 from tests.accounts.factories import UserFactory
 
 from posts.models import Post, Tag, Comment
-from posts.serializers import PostSerializer, TagSerializer, CommentSerializer
+from posts.serializers import PostSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
 from django.urls import reverse
 from rest_framework import status
 
@@ -177,6 +177,23 @@ class TestPostDelete(APITestCase):
         self.assertFalse(Post.objects.all().exists())
 
 
+class TestpostLikeList(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.post = PostFactory(author=self.user1)
+        self.client.force_login(self.user1)
+        self.url = reverse('post-like-list', args=[self.post.id])
+        
+    def test_list_all_post_likes(self):
+        all_postlikes = []
+        for c in range(3):
+            all_postlikes.append(PostLikeFactory(post=self.post))
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        serializer = PostLikeSerializer(all_postlikes, many=True)
+        self.assertEqual(response.data, serializer.data) 
+
+
 class TestLikePost(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
@@ -314,7 +331,7 @@ class TestCommentDetail(APITestCase):
         self.assertEqual(response.data, serializer.data)
 
 
-class TestPostDelete(APITestCase):
+class TestCommentDelete(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.another_user = UserFactory()
@@ -413,3 +430,20 @@ class TestDislikecomment(APITestCase):
         }
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data, expected)
+
+
+class TestCommentLikeList(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.comment = CommentFactory(author=self.user1)
+        self.client.force_login(self.user1)
+        self.url = reverse('comment-like-list', args=[self.comment.id])
+        
+    def test_list_all_comment_likes(self):
+        all_commentlikes = []
+        for c in range(3):
+            all_commentlikes.append(CommentLikeFactory(comment=self.comment))
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        serializer = CommentLikeSerializer(all_commentlikes, many=True)
+        self.assertEqual(response.data, serializer.data) 

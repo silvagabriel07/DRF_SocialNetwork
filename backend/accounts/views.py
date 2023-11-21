@@ -121,10 +121,12 @@ unfollow_user_view = UnfollowUser.as_view()
 
 class FollowerList(generics.ListAPIView):
     serializer_class = FollowerSerializer
+    queryset = Follow.objects.all()
     
     def get_queryset(self):
         user_followed_id = self.kwargs['pk']
-        return Follow.objects.filter(followed_id=user_followed_id)
+        qs = super().get_queryset()
+        return qs.filter(followed_id=user_followed_id)
          
 follower_list_view = FollowerList.as_view()
 

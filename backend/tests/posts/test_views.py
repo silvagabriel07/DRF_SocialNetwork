@@ -1,9 +1,9 @@
 from rest_framework.test import APITestCase
-from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory
+from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory, CommentFactory, CommentLikeFactory
 from tests.accounts.factories import UserFactory
 
-from posts.models import Post
-from posts.serializers import PostSerializer
+from posts.models import Post, Tag, Comment
+from posts.serializers import PostSerializer, TagSerializer, CommentSerializer
 from django.urls import reverse
 from rest_framework import status
 
@@ -35,30 +35,6 @@ class TestPostListCreate(APITestCase):
         self.assertEqual(response.data, serializer.data) 
 
 
-    def test_create_post_successfully(self):
-        data = {
-            'title': 'title 1',
-            'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-            'tags': [self.tags[0].id, self.tags[1].id, self.tags[2].id, ],
-        }
-        response = self.client.post(self.url, data=data, format='json')
-        response.data.pop('nested_tags')
-        expected = {
-           'id': response.data['id'],
-           'title': data['title'],
-           'content': data['content'],
-           'author': self.user1.id,
-        #    'nested_tags': data['tags'],     We already test this field separetely.
-           'created_at': response.data['created_at'],
-           'total_likes': 0,
-           'total_tags': len(data['tags']),
-           'total_comments': 0
-        }
-        
-        self.assertEqual(response.data, expected)
-        post_created = Post.objects.get(id=expected['id'])
-        self.assertEqual([tag.id for tag in post_created.tags.all()], data['tags'])
-        
     def test_create_post_successfully(self):
         data = {
             'title': 'title 1',
@@ -267,12 +243,173 @@ class TestDislikePost(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data, expected)
 
-    def test_like_post_with_pk_of_a_non_existing_post_fails(self):
+    def test_dislike_post_with_pk_of_a_non_existing_post_fails(self):
         invalid_pk = 10
         url = reverse('dislike-post', args=[invalid_pk])
         response = self.client.delete(url)
         expected = {
             'detail': 'The post does not exist.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data, expected)
+
+
+class TestTagList(APITestCase):
+    def setUp(self) -> None:
+        self.url = reverse('tag-list')
+    
+    def test_list_all_tags(self):
+        TagFactory.create_batch(3)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        serializer = TagSerializer(Tag.objects.all(), many=True)
+        self.assertEqual(response.data, serializer.data) 
+
+    
+class TestCommentListCreate(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.post = PostFactory()
+        self.url = reverse('comment-list-create', args=[self.post.id])
+        self.client.force_login(self.user1)
+        
+    def test_list_all_comments(self):
+        all_tags = []
+        for c in range(3):
+            all_tags.append(CommentFactory(post=self.post))
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        serializer = CommentSerializer(all_tags, many=True)
+        self.assertEqual(response.data, serializer.data)
+        
+    def test_create_comment_successfully(self):
+        data = {
+            'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+        }
+        response = self.client.post(self.url, data=data)
+        expected = {
+            'id': response.data['id'],
+            'content': data['content'],
+            'post': self.post.id,
+            'author': self.user1.id,
+            'created_at': response.data['created_at'],
+            'total_likes': 0,
+        }
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data, expected)
+
+
+class TestCommentDetail(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.client.force_login(self.user1)
+        self.post = PostFactory()
+        self.comment = CommentFactory(post=self.post, author=self.user1)
+        self.url = reverse('comment-detail', args=[self.post.id])
+
+    def test_return_data(self):
+        response = self.client.get(self.url)
+        serializer = CommentSerializer(self.comment)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
+
+
+class TestPostDelete(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.another_user = UserFactory()
+        self.post = PostFactory()
+        self.comment = CommentFactory(post=self.post, author=self.user1)
+        self.url = reverse('comment-delete', args=[self.comment.id])
+    
+    def test_delete_comment_user_of_the_request_must_be_the_owner(self):
+        self.client.force_login(self.another_user)
+        response = self.client.delete(self.url)
+        expected = {
+            'request.user': 'You are not authorized to perform this action.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data, expected)
+
+    def test_delete_comment_successfully(self):
+        self.client.force_login(self.user1)
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Comment.objects.all().exists())
+
+
+class TestLikeComment(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.user2 = UserFactory()
+        self.comment = CommentFactory(author=self.user2)
+        self.client.force_login(self.user1)
+        self.url = reverse('like-comment', args=[self.comment.id])
+
+    def test_like_comment_successfully(self):
+        response = self.client.post(self.url)
+        expected = {
+            'message': 'You have successfully liked the comment.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data, expected)
+        self.comment.refresh_from_db()
+        self.assertEqual(self.comment.likes.all().count(), 1)
+
+    def test_like_comment_already_liked_fails(self):
+        CommentLikeFactory(comment=self.comment, user=self.user1)
+        response = self.client.post(self.url)
+        expected = {
+            'detail': 'You are already liking this comment.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, expected)
+        self.assertEqual(self.comment.likes.all().count(), 1)
+
+    def test_like_comment_with_pk_of_a_non_existing_comment_fails(self):
+        invalid_pk = 10
+        url = reverse('like-comment', args=[invalid_pk])
+        response = self.client.post(url)
+        expected = {
+            'detail': 'The comment does not exist.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data, expected)
+
+
+class TestDislikecomment(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.user2 = UserFactory()
+        self.comment = CommentFactory(author=self.user2)
+        self.client.force_login(self.user1)
+        self.url = reverse('dislike-comment', args=[self.comment.id])
+
+    def test_dislike_comment_successfully(self):
+        CommentLikeFactory(user=self.user1, comment=self.comment)
+        response = self.client.delete(self.url)
+        expected = {
+            'message': 'You have successfully disliked the comment.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected)
+        self.comment.refresh_from_db()
+        self.assertEqual(self.comment.likes.all().count(), 0)
+
+    def test_dislike_comment_that_is_not_liked_fails(self):
+        response = self.client.delete(self.url)
+        expected = {
+            'detail': 'You were not liking this comment.'
+        }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, expected)
+
+    def test_dislike_comment_with_pk_of_a_non_existing_comment_fails(self):
+        invalid_pk = 10
+        url = reverse('dislike-comment', args=[invalid_pk])
+        response = self.client.delete(url)
+        expected = {
+            'detail': 'The comment does not exist.'
         }
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data, expected)

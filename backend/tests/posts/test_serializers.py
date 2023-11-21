@@ -1,7 +1,6 @@
 from rest_framework.test import APITestCase, APIRequestFactory
-from posts.models import Post
-from posts.serializers import PostSerializer, PostUpdateSerializer
-from tests.posts.factories import PostFactory, TagFactory
+from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer
+from tests.posts.factories import PostFactory, TagFactory, CommentFactory
 from tests.accounts.factories import UserFactory
 
 
@@ -79,5 +78,46 @@ class TestPostUpdateSerializer(APITestCase):
         self.assertEqual(serializer.data, expected)
         
         
+class TestTagSerializer(APITestCase):
+    def setUp(self) -> None:
+        self.tag = TagFactory()
+    
+    def test_data_returned(self):
+        serializer = TagSerializer(self.tag)
+        expected = {'id': self.tag.id, 'name': self.tag.name}
+        self.assertEqual(serializer.data, expected)
         
 
+class TestCommentSerializer(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.post = PostFactory()
+        self.comment = CommentFactory(post=self.post)
+    
+    def test_comment_object_serialized(self):
+        serializer = CommentSerializer(self.comment)
+        expected = {
+            'post': self.comment.post.id,
+            'id': self.comment.id,
+            'author': self.comment.author.id,
+            'content': self.comment.content,
+            'created_at': self.comment.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+            'total_likes': 0,
+        }
+        self.assertEqual(serializer.data, expected)
+    
+    def test_comment_data_serialized(self):
+        request = APIRequestFactory('/')
+        request.user = self.user1
+        data = {
+            'content': 'lorem ipsunm content',
+            'post': self.post.id,
+        }
+        serializer = CommentSerializer(data=data, context={'request': request})
+        self.assertTrue(serializer.is_valid())
+        comment_instance = serializer.save()
+        self.assertEqual(comment_instance.content, data['content'])
+        self.assertEqual(comment_instance.post.id, data['post'])
+        self.assertEqual(comment_instance.author.id, self.user1.id)
+        
+        

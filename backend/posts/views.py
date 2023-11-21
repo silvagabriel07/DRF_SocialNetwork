@@ -1,7 +1,7 @@
 from rest_framework import generics, status
 from rest_framework.views import Response, APIView
 from posts.models import Post, Tag, Comment
-from posts.serializers import PostSerializer, PostUpdateSerializer, LikePostSerializer
+from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer
 from accounts.serializers import MessageSerializer
 # Create your views here.
 
@@ -82,3 +82,94 @@ class DislikePost(generics.DestroyAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
             
 dislike_post_view = DislikePost.as_view()
+
+
+class TagList(generics.ListAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    
+tag_list_view = TagList.as_view()
+
+
+class CommentListCreate(generics.ListCreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    
+    def get_queryset(self):
+        post_id = self.kwargs['pk']
+        qs = super().get_queryset()
+        return qs.filter(post_id=post_id)
+        
+    def perform_create(self, serializer):
+        post_id = self.kwargs['pk']
+        try:
+            post = Post.objects.get(id=post_id)
+        except Post.DoesNotExist:
+            return Response({'detail': 'The post does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        return serializer.save(author=self.request.user, post=post)
+    
+comment_list_create_view = CommentListCreate.as_view()
+
+
+class CommentDetail(generics.RetrieveAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    
+    def get_queryset(self):
+        comment_id = self.kwargs['pk']
+        qs = super().get_queryset()
+        return qs.filter(id=comment_id)
+
+    
+comment_detail_view = CommentDetail.as_view()
+
+
+class CommentDelete(generics.DestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+        
+    def destroy(self, request, *args, **kwargs):
+        comment = self.get_object()
+        
+        if not request.user == comment.author:
+            error_response = {'request.user': 'You are not authorized to perform this action.'}
+            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
+        
+        return super().destroy(request, *args, **kwargs)
+
+comment_delete_view = CommentDelete.as_view()
+
+
+class LikeComment(generics.CreateAPIView):
+    def post(self, request, pk):
+        user = request.user
+        try:
+            comment = Comment.objects.get(pk=pk)
+        except Comment.DoesNotExist:
+            return Response({'detail': 'The comment does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        if comment.likes.filter(user=user).exists():
+            return Response({'detail': 'You are already liking this comment.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.profile.like_comment(comment)
+        serializer = MessageSerializer({'message': 'You have successfully liked the comment.'})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+like_comment_view = LikeComment.as_view()
+
+
+class DislikeComment(generics.DestroyAPIView):
+    def delete(self, request, pk):
+        user = request.user
+        try:
+            comment = Comment.objects.get(pk=pk)
+        except Comment.DoesNotExist:
+            return Response({'detail': 'The comment does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        if not comment.likes.filter(user=user).exists():
+            return Response({'detail': 'You were not liking this comment.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.profile.dislike_comment(comment)
+        serializer = MessageSerializer({'message': 'You have successfully disliked the comment.'})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+            
+dislike_comment_view = DislikeComment.as_view()
+

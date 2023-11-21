@@ -1,15 +1,11 @@
 from rest_framework import serializers
-from posts.models import Post, Tag
+from posts.models import Post, Tag, Comment
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = '__all__'
-
-
-class LikePostSerializer(serializers.Serializer):
-    message = serializers.CharField()
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -71,3 +67,21 @@ class PostUpdateSerializer(PostSerializer):
             instance.tags.set(tags)
         instance.save()
         return instance
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ['id', 'content', 'post', 'author', 'created_at', 'total_likes']
+        extra_kwargs = {
+            'id': {'read_only': True},
+            'created_at': {'read_only': True},
+            'author': {'read_only': True},
+            'post': {'required': False},
+        }
+    
+    def create(self, validated_data):
+        request = self.context.get('request')
+        validated_data['author'] = request.user
+        comment = Comment.objects.create(**validated_data)
+        return comment

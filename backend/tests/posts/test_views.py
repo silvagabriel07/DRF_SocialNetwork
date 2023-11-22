@@ -7,6 +7,7 @@ from posts.serializers import PostSerializer, TagSerializer, CommentSerializer, 
 from django.urls import reverse
 from rest_framework import status
 
+
 class TestPostListCreate(APITestCase):
     def setUp(self) -> None:
         self.url = reverse('post-list-create')
@@ -14,26 +15,41 @@ class TestPostListCreate(APITestCase):
         self.client.force_login(self.user1)
 
         self.tags = TagFactory.create_batch(3)
-    
+
     def test_list_all_nested_tags_in_post(self):
         post = PostFactory()
         post.tags.set(self.tags)
-        
-        response = self.client.get(self.url) 
+
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        expected = [{'id': tag.id, 'name': tag.name} for tag in post.tags.all()]
-        ordered_nested_tags = [ordered_post['nested_tags'] for ordered_post in response.data]
-        response_nested_tags_data = [{'id': tag['id'], 'name': tag['name']} for tag in ordered_nested_tags[0]]
+        expected = [{'id': tag.id, 'name': tag.name}
+                    for tag in post.tags.all()]
+        ordered_nested_tags = [ordered_post['nested_tags']
+                               for ordered_post in response.data]
+        response_nested_tags_data = [
+            {'id': tag['id'], 'name': tag['name']} for tag in ordered_nested_tags[0]]
         self.assertListEqual(response_nested_tags_data, expected)
-    
+
     def test_list_all_posts(self):
         PostFactory.create_batch(3)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = PostSerializer(Post.objects.all(), many=True)
-        self.assertEqual(response.data, serializer.data) 
+        self.assertEqual(response.data, serializer.data)
 
+    def test_create_post_with_more_than_30_tags_fails(self):
+        data = {
+            'title': 'title 1',
+            'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+            'tags': [tag.id for tag in TagFactory.create_batch(31)],
+        }
+        response = self.client.post(self.url, data=data, format='json')
+        expected = {'tags':
+                    {'detail': "A post can't have more than 30 tags."}
+                    }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, expected)
 
     def test_create_post_successfully(self):
         data = {
@@ -44,20 +60,21 @@ class TestPostListCreate(APITestCase):
         response = self.client.post(self.url, data=data, format='json')
         response.data.pop('nested_tags')
         expected = {
-           'id': response.data['id'],
-           'title': data['title'],
-           'content': data['content'],
-           'author': self.user1.id,
-        #    'nested_tags': data['tags'],     We already test this field separetely.
-           'created_at': response.data['created_at'],
-           'total_likes': 0,
-           'total_tags': len(data['tags']),
-           'total_comments': 0
+            'id': response.data['id'],
+            'title': data['title'],
+            'content': data['content'],
+            'author': self.user1.id,
+            #    'nested_tags': data['tags'],     We already test this field separetely.
+            'created_at': response.data['created_at'],
+            'total_likes': 0,
+            'total_tags': len(data['tags']),
+            'total_comments': 0
         }
-        
+
         self.assertEqual(response.data, expected)
         post_created = Post.objects.get(id=expected['id'])
-        self.assertEqual([tag.id for tag in post_created.tags.all()], data['tags'])
+        self.assertEqual(
+            [tag.id for tag in post_created.tags.all()], data['tags'])
 
 
 class TestPostDetail(APITestCase):
@@ -74,7 +91,7 @@ class TestPostDetail(APITestCase):
         serializer = PostSerializer(post)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
-        
+
 
 class TestPostUpdate(APITestCase):
     def setUp(self) -> None:
@@ -82,7 +99,7 @@ class TestPostUpdate(APITestCase):
         self.post = PostFactory(author=self.user1)
         self.client.force_login(self.user1)
         self.url = reverse('post-update', args=[self.post.id])
-    
+
     def test_patch_title_updated(self):
         data = {
             'title': 'Title updated'
@@ -102,7 +119,7 @@ class TestPostUpdate(APITestCase):
         self.assertEqual(response.data['content'], data['content'])
         self.post.refresh_from_db()
         self.assertEqual(self.post.content, data['content'])
-        
+
     def test_patch_tags_updated(self):
         all_tags = TagFactory.create_batch(3)
         tags = [tag.id for tag in all_tags]
@@ -111,10 +128,11 @@ class TestPostUpdate(APITestCase):
         }
         response = self.client.patch(self.url, data=data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['nested_tags'], [{'id': tag.id, 'name': tag.name} for tag in all_tags])
+        self.assertEqual(response.data['nested_tags'], [
+                         {'id': tag.id, 'name': tag.name} for tag in all_tags])
         self.post.refresh_from_db()
         self.assertEqual(list(self.post.tags.all()), all_tags)
-    
+
     def test_put_return_data(self):
         all_tags = TagFactory.create_batch(3)
         tags = [tag.id for tag in all_tags]
@@ -125,19 +143,19 @@ class TestPostUpdate(APITestCase):
         }
         response = self.client.patch(self.url, data=data)
         expected = {
-           'id': self.post.id,
-           'title': data['title'],
-           'content': data['content'],
-           'author': self.user1.id,
-           'nested_tags': [{'id': tag.id, 'name': tag.name} for tag in all_tags],
-           'created_at': response.data['created_at'],
-           'total_likes': 0,
-           'total_tags': len(data['tags']),
-           'total_comments': 0
+            'id': self.post.id,
+            'title': data['title'],
+            'content': data['content'],
+            'author': self.user1.id,
+            'nested_tags': [{'id': tag.id, 'name': tag.name} for tag in all_tags],
+            'created_at': response.data['created_at'],
+            'total_likes': 0,
+            'total_tags': len(data['tags']),
+            'total_comments': 0
         }
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, expected)
-    
+
     def test_update_post_user_of_the_request_must_be_the_owner(self):
         another_user = UserFactory()
         self.client.logout()
@@ -152,6 +170,21 @@ class TestPostUpdate(APITestCase):
         }
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response.data, expected)
+        
+    def test_put_update_post_with_more_than_30_tags_fails(self):
+        all_tags = TagFactory.create_batch(31)
+        tags = [tag.id for tag in all_tags]
+        data = {
+            'title': 'Title updated',
+            'content': 'Content updated',
+            'tags': tags
+        }
+        response = self.client.patch(self.url, data=data)
+        expected = {'tags':
+                    {'detail': "A post can't have more than 30 tags."}
+                    }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, expected)
 
 
 class TestPostDelete(APITestCase):
@@ -160,7 +193,7 @@ class TestPostDelete(APITestCase):
         self.another_user = UserFactory()
         self.post = PostFactory(author=self.user1)
         self.url = reverse('post-delete', args=[self.post.id])
-    
+
     def test_delete_post_user_of_the_request_must_be_the_owner(self):
         self.client.force_login(self.another_user)
         response = self.client.delete(self.url)
@@ -183,7 +216,7 @@ class TestpostLikeList(APITestCase):
         self.post = PostFactory(author=self.user1)
         self.client.force_login(self.user1)
         self.url = reverse('post-like-list', args=[self.post.id])
-        
+
     def test_list_all_post_likes(self):
         all_postlikes = []
         for c in range(3):
@@ -191,7 +224,7 @@ class TestpostLikeList(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = PostLikeSerializer(all_postlikes, many=True)
-        self.assertEqual(response.data, serializer.data) 
+        self.assertEqual(response.data, serializer.data)
 
 
 class TestLikePost(APITestCase):
@@ -274,22 +307,22 @@ class TestDislikePost(APITestCase):
 class TestTagList(APITestCase):
     def setUp(self) -> None:
         self.url = reverse('tag-list')
-    
+
     def test_list_all_tags(self):
         TagFactory.create_batch(3)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = TagSerializer(Tag.objects.all(), many=True)
-        self.assertEqual(response.data, serializer.data) 
+        self.assertEqual(response.data, serializer.data)
 
-    
+
 class TestCommentListCreate(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.post = PostFactory()
         self.url = reverse('comment-list-create', args=[self.post.id])
         self.client.force_login(self.user1)
-        
+
     def test_list_all_comments(self):
         all_tags = []
         for c in range(3):
@@ -298,7 +331,7 @@ class TestCommentListCreate(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = CommentSerializer(all_tags, many=True)
         self.assertEqual(response.data, serializer.data)
-        
+
     def test_create_comment_successfully(self):
         data = {
             'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
@@ -338,7 +371,7 @@ class TestCommentDelete(APITestCase):
         self.post = PostFactory()
         self.comment = CommentFactory(post=self.post, author=self.user1)
         self.url = reverse('comment-delete', args=[self.comment.id])
-    
+
     def test_delete_comment_user_of_the_request_must_be_the_owner(self):
         self.client.force_login(self.another_user)
         response = self.client.delete(self.url)
@@ -438,7 +471,7 @@ class TestCommentLikeList(APITestCase):
         self.comment = CommentFactory(author=self.user1)
         self.client.force_login(self.user1)
         self.url = reverse('comment-like-list', args=[self.comment.id])
-        
+
     def test_list_all_comment_likes(self):
         all_commentlikes = []
         for c in range(3):
@@ -446,4 +479,4 @@ class TestCommentLikeList(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = CommentLikeSerializer(all_commentlikes, many=True)
-        self.assertEqual(response.data, serializer.data) 
+        self.assertEqual(response.data, serializer.data)

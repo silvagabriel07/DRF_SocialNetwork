@@ -15,9 +15,9 @@ urlpatterns = [
     path('<int:pk>/comment/', views.comment_list_create_view, name='comment-list-create'),
     path('comment-detail/<int:pk>/', views.comment_detail_view, name='comment-detail'),
     path('comment-delete/<int:pk>/', views.comment_delete_view, name='comment-delete'),
+    path('comment/like-list/<int:pk>/', views.comment_like_list_view, name='comment-like-list'),    
 
     path('like-comment/<int:pk>/', views.like_comment_view, name='like-comment'),
     path('dislike-comment/<int:pk>/', views.dislike_comment_view, name='dislike-comment'),
-    path('comment/like-list/<int:pk>/', views.comment_like_list_view, name='comment-like-list'),    
 
 ]

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
-
+from django.core.exceptions import ValidationError
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,13 +32,18 @@ class PostSerializer(serializers.ModelSerializer):
             'nested_tags': {'read_only': True},
         }
 
+    def validate_tags(self, values):
+        if len(values) > 30:
+            raise serializers.ValidationError({'detail': "A post can't have more than 30 tags."})
+        return super().validate(values)
+
     def create(self, validated_data):
         request = self.context.get('request')
         validated_data['author'] = request.user
         tags = validated_data.pop('tags')
         post = Post.objects.create(**validated_data)
         for tag in tags:
-            post.tags.add(tag)
+                post.tags.add(tag)
         return post
     
 
@@ -58,6 +63,11 @@ class PostUpdateSerializer(PostSerializer):
             'title': {'required': False},
             'content': {'required': False},
         }
+
+    def validate_tags(self, values):
+        if self.instance.tags.all().count() + len(values) > 30:
+            raise serializers.ValidationError({'detail': "A post can't have more than 30 tags."})
+        return super().validate(values)
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)

@@ -2,7 +2,8 @@ from rest_framework.test import APITestCase, APIRequestFactory
 from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
 from tests.posts.factories import PostFactory, TagFactory, CommentFactory, CommentLikeFactory, PostLikeFactory
 from tests.accounts.factories import UserFactory
-
+from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ValidationError as validaerr
 
 class TestPostSerializer(APITestCase):    
     def setUp(self) -> None:
@@ -26,7 +27,7 @@ class TestPostSerializer(APITestCase):
         }
         self.assertDictEqual(self.serializer.data, expected)
 
-    def test_post_data_serialized(self):
+    def test_create_post_data_serialized(self):
         data = {
             'title': 'Test Title',
             'content': 'Test Content',
@@ -42,6 +43,18 @@ class TestPostSerializer(APITestCase):
         self.assertEqual(post_instance.content, data['content'])
         self.assertEqual(post_instance.author.id, request.user.id)
         self.assertListEqual(list(post_instance.tags.all()), self.tags)
+    
+    def test_create_post_with_more_than_30_tags_fails(self):
+        data = {
+            'title': 'Test Title',
+            'content': 'Test Content',
+            'tags': [tag.id for tag in TagFactory.create_batch(31)],
+        }
+        request = APIRequestFactory('/')
+        request.user = self.user
+        serializer = PostSerializer(data=data, context={'request': request})
+        with self.assertRaisesMessage(ValidationError, "A post can't have more than 30 tags."):
+            serializer.is_valid(raise_exception=True)
 
 
 class TestPostUpdateSerializer(APITestCase):
@@ -76,6 +89,19 @@ class TestPostUpdateSerializer(APITestCase):
             'total_comments': self.post.total_comments,
         }
         self.assertEqual(serializer.data, expected)
+        
+    def test_update_post_adding_more_than_30_tags_fails(self):
+        self.post.tags.add(TagFactory())
+        tags = [tag.id for tag in TagFactory.create_batch(30)]
+        data = {
+            'title': 'Updated title',
+            'content': 'Updated content',
+            'tags': tags
+        }
+        serializer = PostUpdateSerializer(instance=self.post, data=data)
+        with self.assertRaisesMessage(ValidationError, "A post can't have more than 30 tags."):
+            serializer.is_valid(raise_exception=True)
+        self.assertEqual(self.post.tags.all().count(), 1)
         
         
 class TestTagSerializer(APITestCase):

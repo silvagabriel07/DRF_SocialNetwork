@@ -19,8 +19,6 @@ class User(AbstractUser):
     def __str__(self) -> str:
         return self.username
 
-    # methods related to authorizathion and permissions
-
 
 class Follow(models.Model):
     follower = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE) # who follow

@@ -69,7 +69,6 @@ class PostUpdateSerializer(PostSerializer):
             raise serializers.ValidationError({'detail': "A post can't have more than 30 tags."})
         return super().validate(values)
 
-
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
         instance.content = validated_data.get('content', instance.content)

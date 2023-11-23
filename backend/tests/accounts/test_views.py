@@ -1,6 +1,6 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
-from accounts.models import Profile, User, Follow
+from accounts.models import Profile, User
 from tests.accounts.factories import UserFactory, FollowFactory
 from accounts.serializers import UserSerializer, ProfileSerializer
 from django.urls import reverse
@@ -34,14 +34,19 @@ class TestUserRegistration(APITestCase):
         response = self.client.post(self.url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         expected = {
-            'id': response.data['id'],
-            'username': data['username'],
-            'email': data['email'],
-            'is_active': response.data['is_active'],
+            'user': {
+                'id': response.data['user']['id'],
+                'username': data['username'],
+                'email': data['email'],
+                'is_active': response.data['user']['is_active']
+                },
         }
-        self.assertEqual(response.data, expected)
+        self.assertIn('refresh', response.data)
+        self.assertIn('access', response.data)
+        self.assertIn('user', response.data)
+        self.assertEqual(response.data['user'], expected['user'])
         self.assertTrue(User.objects.filter(email=data['email'], username=data['username']).exists())
-    
+
     def test_post_with_already_existing_username_fails(self):
         data = {
             'username': self.user.username,

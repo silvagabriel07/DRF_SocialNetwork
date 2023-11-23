@@ -1,8 +1,9 @@
 from rest_framework import generics, permissions, status, serializers
-from rest_framework.views import Response, APIView
+from rest_framework.views import Response
 from accounts.models import User, Profile, Follow
 from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer, MessageSerializer, FollowerSerializer, FollowedSerializer
 from django.core.exceptions import ValidationError
+from rest_framework_simplejwt.tokens import RefreshToken
 # Create your views here.
 
 class UserDetail(generics.RetrieveAPIView):
@@ -24,6 +25,17 @@ class UserRegistration(generics.CreateAPIView):
     serializer_class = UserCreationSerializer
     permission_classes = [permissions.AllowAny]
     
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': UserCreationSerializer(user, context=self.get_serializer_context()).data
+        }, status=status.HTTP_201_CREATED)
+
 user_registration_view = UserRegistration.as_view()
 
 
@@ -120,7 +132,7 @@ class UnfollowUser(generics.DestroyAPIView):
             raise serializers.ValidationError({'detail': list(e)}) 
         serializer = MessageSerializer({'message': 'You have successfully unfollowed the user.'})
         return Response(serializer.data, status=status.HTTP_200_OK)
-            
+
 unfollow_user_view = UnfollowUser.as_view()
 
 

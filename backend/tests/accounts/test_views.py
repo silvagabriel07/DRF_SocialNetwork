@@ -96,7 +96,7 @@ class TestUserList(APITestCase):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True, context={'request': response.wsgi_request})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.data['results'], serializer.data)
 
 
 class TestUserUpdate(APITestCase):
@@ -195,7 +195,7 @@ class TestProfileList(APITestCase):
         all_profiles = Profile.objects.all() 
         serializer = ProfileSerializer(all_profiles, many=True, context={'request': response.wsgi_request})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.data['results'], serializer.data)
 
 
 class TestProfileUpdate(APITestCase):
@@ -363,7 +363,7 @@ class TestFollowerList(APITestCase):
             data = {'user': UserSerializer(follow.follower, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, expected)
+        self.assertEqual(response.data['results'], expected)
 
 class TestFollowedList(APITestCase):
     def setUp(self) -> None:
@@ -380,6 +380,6 @@ class TestFollowedList(APITestCase):
             data = {'user': UserSerializer(follow.followed, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, expected)
+        self.assertEqual(response.data['results'], expected)
         
         

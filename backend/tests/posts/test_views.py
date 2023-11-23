@@ -28,7 +28,7 @@ class TestPostListCreate(APITestCase):
         expected = [{'id': tag.id, 'name': tag.name}
                     for tag in post.tags.all()]
         ordered_nested_tags = [ordered_post['nested_tags']
-                               for ordered_post in response.data]
+                               for ordered_post in response.data['results']]
         response_nested_tags_data = [
             {'id': tag['id'], 'name': tag['name']} for tag in ordered_nested_tags[0]]
         self.assertListEqual(response_nested_tags_data, expected)
@@ -38,7 +38,7 @@ class TestPostListCreate(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = PostSerializer(Post.objects.all(), many=True)
-        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.data['results'], serializer.data)
 
     def test_create_post_with_more_than_30_tags_fails(self):
         data = {
@@ -243,7 +243,7 @@ class TestpostLikeList(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = PostLikeSerializer(all_postlikes, many=True)
-        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.data['results'], serializer.data)
 
 
 class TestLikePost(APITestCase):
@@ -332,7 +332,7 @@ class TestTagList(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = TagSerializer(Tag.objects.all(), many=True)
-        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.data['results'], serializer.data)
 
 
 class TestCommentListCreate(APITestCase):
@@ -349,7 +349,7 @@ class TestCommentListCreate(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = CommentSerializer(all_tags, many=True)
-        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.data['results'], serializer.data)
 
     def test_create_comment_successfully(self):
         data = {
@@ -498,4 +498,4 @@ class TestCommentLikeList(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         serializer = CommentLikeSerializer(all_commentlikes, many=True)
-        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.data['results'], serializer.data)

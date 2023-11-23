@@ -298,7 +298,7 @@ class TestFollowUser(APITestCase):
             'detail': 'You can not follow yourself.'
         }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.assertEqual(response.data['detail'][0], expected['detail'])
         self.assertEqual(self.user1.following.all().count(), 0)
 
 

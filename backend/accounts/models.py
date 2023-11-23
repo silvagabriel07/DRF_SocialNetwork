@@ -4,7 +4,7 @@ from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
 from django.db.utils import IntegrityError
 from posts.models import PostLike, CommentLike
-from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ValidationError
 
 # Create your models here.
 
@@ -28,11 +28,6 @@ class Follow(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"{self.follower} follows {self.followed}"
-    
-    def clean(self):
-        if self.followed == self.follower:
-            raise ValidationError({"detail": "You can not follow yourself."})
-
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -45,7 +40,7 @@ class Follow(models.Model):
 @receiver(pre_save, sender=Follow)
 def check_self_following(sender, instance, **kwargs):
     if instance.follower == instance.followed:
-       raise ValidationError({"detail": "You can not follow yourself."})
+       raise ValidationError("You can not follow yourself.")
 
 
 
@@ -66,14 +61,14 @@ class Profile(models.Model):
         try:
             Follow.objects.create(follower=self.user, followed=user)
         except IntegrityError as err:
-            raise ValidationError({"detail": "You are already following this user.", "error": str(err)})
+            raise ValidationError("You are already following this user.")
 
     def unfollow(self, user):
         try:
             follow = Follow.objects.get(follower=self.user, followed=user)
             follow.delete()
         except Follow.DoesNotExist as err:
-            raise ValidationError({"detail": "You were not following this user.", "error": str(err)})
+            raise ValidationError("You were not following this user.")
 
     
     @property
@@ -89,14 +84,14 @@ class Profile(models.Model):
         try:
             PostLike.objects.create(user=self.user, post=post)
         except IntegrityError as err:
-            raise ValidationError({"detail": "You are already liking this post.", "error": str(err)})
+            raise ValidationError("You are already liking this post.")
 
     def dislike_post(self, post):
         try:
             postlike = PostLike.objects.get(user=self.user, post=post)
             postlike.delete()
         except PostLike.DoesNotExist as err:
-            raise ValidationError({"detail": "You were not liking this post.", "error": str(err)})
+            raise ValidationError("You were not liking this post.")
         
     @property
     def total_posts(self):
@@ -107,14 +102,14 @@ class Profile(models.Model):
         try:
             CommentLike.objects.create(user=self.user, comment=comment)
         except IntegrityError as err:
-            raise ValidationError({"detail": "You have already liked this comment.", "error": str(err)})
+            raise ValidationError("You have already liked this comment.")
 
     def dislike_comment(self, comment):
         try:
             commentlike = CommentLike.objects.get(user=self.user, comment=comment)
             commentlike.delete()
         except CommentLike.DoesNotExist as err:
-            raise ValidationError({"detail": "You did not like this comment.", "error": str(err)})
+            raise ValidationError("You did not like this comment.")
 
 
 @receiver(post_save, sender=User)

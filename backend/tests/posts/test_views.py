@@ -6,6 +6,8 @@ from posts.models import Post, Tag, Comment
 from posts.serializers import PostSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
 from django.urls import reverse
 from rest_framework import status
+from django.utils import timezone
+from unittest.mock import patch
 
 
 class TestPostListCreate(APITestCase):
@@ -141,7 +143,7 @@ class TestPostUpdate(APITestCase):
             'content': 'Content updated',
             'tags': tags
         }
-        response = self.client.patch(self.url, data=data)
+        response = self.client.put(self.url, data=data)
         expected = {
             'id': self.post.id,
             'title': data['title'],
@@ -179,10 +181,27 @@ class TestPostUpdate(APITestCase):
             'content': 'Content updated',
             'tags': tags
         }
-        response = self.client.patch(self.url, data=data)
+        response = self.client.put(self.url, data=data)
         expected = {'tags':
                     {'detail': "A post can't have more than 30 tags."}
                     }
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, expected)
+    
+    @patch('posts.models.timezone')
+    def test_patch_update_post_after_12_hours_fails(self, mock_timezone):
+        mock_timezone.now.return_value = timezone.now() + timezone.timedelta(days=1)
+        mock_timezone.timedelta.return_value = timezone.timedelta(hours=12)
+        data = {
+            'title': 'Title updated',
+            'content': 'Content updated',
+        }
+        response = self.client.patch(self.url, data=data)
+        expected = {
+            'edited': {
+                'detail': ['This post cannot be edited any further.']
+            }
+        }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data, expected)
 

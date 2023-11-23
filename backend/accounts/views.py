@@ -1,7 +1,8 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, serializers
 from rest_framework.views import Response, APIView
 from accounts.models import User, Profile, Follow
 from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer, MessageSerializer, FollowerSerializer, FollowedSerializer
+from django.core.exceptions import ValidationError
 # Create your views here.
 
 class UserDetail(generics.RetrieveAPIView):
@@ -95,8 +96,10 @@ class FollowUser(generics.CreateAPIView):
             return Response({'detail': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
         if request_profile.user.following.filter(followed=user).exists():
             return Response({'detail': 'You are already following this user.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        request_profile.follow(user)
+        try:
+            request_profile.follow(user)
+        except ValidationError as e:
+            raise serializers.ValidationError({'detail': list(e)}) 
         serializer = MessageSerializer({'message': 'You have successfully followed the user.'})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
             
@@ -111,8 +114,10 @@ class UnfollowUser(generics.DestroyAPIView):
             return Response({'detail': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
         if not request_profile.user.following.filter(followed=user).exists():
             return Response({'detail': 'You were not following this user.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        request_profile.unfollow(user)
+        try:
+            request_profile.unfollow(user)
+        except ValidationError as e:
+            raise serializers.ValidationError({'detail': list(e)}) 
         serializer = MessageSerializer({'message': 'You have successfully unfollowed the user.'})
         return Response(serializer.data, status=status.HTTP_200_OK)
             

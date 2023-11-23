@@ -1,9 +1,9 @@
-from rest_framework.test import APITestCase 
+from rest_framework.test import APITestCase
+from rest_framework import serializers 
 from accounts.models import User, Profile, Follow
 from tests.accounts.factories import UserFactory
 from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory, CommentFactory, CommentLikeFactory
-from rest_framework.exceptions import ValidationError
-from django.db.utils import IntegrityError
+from django.core.exceptions import ValidationError
 
 class TestProfileFollowMethods(APITestCase):
     def setUp(self) -> None:

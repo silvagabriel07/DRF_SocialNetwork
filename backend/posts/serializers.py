@@ -69,15 +69,19 @@ class PostUpdateSerializer(PostSerializer):
             raise serializers.ValidationError({'detail': "A post can't have more than 30 tags."})
         return super().validate(values)
 
+
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
         instance.content = validated_data.get('content', instance.content)
         tags = validated_data.get('tags')
         if tags is not None:
             instance.tags.set(tags)
-        instance.save()
+        try:
+            instance.save()
+        except ValidationError as e:
+            raise serializers.ValidationError({'edited':{'detail': list(e)}}, code='invalid')
         return instance
-
+    
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:

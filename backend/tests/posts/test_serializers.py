@@ -3,7 +3,8 @@ from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerialize
 from tests.posts.factories import PostFactory, TagFactory, CommentFactory, CommentLikeFactory, PostLikeFactory
 from tests.accounts.factories import UserFactory
 from rest_framework.exceptions import ValidationError
-from django.core.exceptions import ValidationError as validaerr
+from unittest.mock import patch
+from django.utils import timezone
 
 class TestPostSerializer(APITestCase):    
     def setUp(self) -> None:
@@ -70,7 +71,7 @@ class TestPostUpdateSerializer(APITestCase):
             'content': 'Updated content',
             'tags': tags
         }
-        serializer = PostSerializer(instance=self.post, data=data)
+        serializer = PostUpdateSerializer(instance=self.post, data=data)
         self.assertTrue(serializer.is_valid())
         serializer.save()
         self.post.refresh_from_db()
@@ -89,6 +90,7 @@ class TestPostUpdateSerializer(APITestCase):
             'total_comments': self.post.total_comments,
         }
         self.assertEqual(serializer.data, expected)
+        self.assertTrue(self.post.edited)
         
     def test_update_post_adding_more_than_30_tags_fails(self):
         self.post.tags.add(TagFactory())
@@ -102,7 +104,33 @@ class TestPostUpdateSerializer(APITestCase):
         with self.assertRaisesMessage(ValidationError, "A post can't have more than 30 tags."):
             serializer.is_valid(raise_exception=True)
         self.assertEqual(self.post.tags.all().count(), 1)
-        
+    
+    def test_update_post_already_updated_fails(self):
+        self.post.title = 'title updated'
+        self.post.save()
+        data = {
+            'title': 'Updated title again',
+            'content': 'Updated content again',
+        }
+        serializer = PostUpdateSerializer(instance=self.post, data=data)
+        serializer.is_valid()
+        with self.assertRaisesMessage(ValidationError, 'This post has already been edited.'):
+            serializer.save()
+    
+    @patch('posts.models.timezone')
+    def test_update_post_after_12_hours_fails(self, mock_timezone):
+        mock_timezone.now.return_value = timezone.now() + timezone.timedelta(days=1)
+        mock_timezone.timedelta.return_value = timezone.timedelta(hours=12)
+        data = {
+            'title': 'Updated title again',
+            'content': 'Updated content again',
+        }
+        serializer = PostUpdateSerializer(instance=self.post, data=data)
+        serializer.is_valid()
+        with self.assertRaisesMessage(ValidationError, 'This post cannot be edited any further.'):
+            serializer.save()
+
+
         
 class TestTagSerializer(APITestCase):
     def setUp(self) -> None:

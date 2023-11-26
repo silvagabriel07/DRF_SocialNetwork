@@ -171,7 +171,7 @@ class TestFollowerSerializer(APITestCase):
         serializer = FollowerSerializer(self.all_followers, many=True, context={'request': request})
         expected = []
         for follow in self.all_followers:
-            data = {'user': UserSerializer(follow.follower, context={'request': request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
+            data = {'profile': ProfileSerializer(follow.follower.profile, context={'request': request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
         self.assertEqual(serializer.data, expected)
         
@@ -189,7 +189,7 @@ class TestFollowedSerializer(APITestCase):
         serializer = FollowedSerializer(self.all_following, many=True, context={'request': request})
         expected = []
         for follow in self.all_following:
-            data = {'user': UserSerializer(follow.followed, context={'request': request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
+            data = {'profile': ProfileSerializer(follow.followed.profile, context={'request': request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
         self.assertEqual(serializer.data, expected)
         

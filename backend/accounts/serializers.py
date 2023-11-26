@@ -96,7 +96,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'id': {'read_only': True},
             'user': {'read_only': True},
             'created_at': {'read_only': True},
-        }
+        }   
         
     def update(self, instance, validated_data):
         instance.name = validated_data.get('name', instance.name)
@@ -112,14 +112,14 @@ class MessageSerializer(serializers.Serializer):
 
 
 class FollowerSerializer(serializers.ModelSerializer):
-    user = UserSerializer(source='follower')    
+    profile = ProfileSerializer(source='follower.profile')
     class Meta:
         model = Follow
-        fields = ['user', 'created_at']
+        fields = ['profile', 'created_at']
 
 
 class FollowedSerializer(serializers.ModelSerializer):
-    user = UserSerializer(source='followed')    
+    profile = ProfileSerializer(source='followed.profile')    
     class Meta:
         model = Follow
-        fields = ['user', 'created_at']
+        fields = ['profile', 'created_at']

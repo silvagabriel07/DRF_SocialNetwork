@@ -118,7 +118,7 @@ class TestUserUpdate(APITestCase):
     def test_patch_update_password(self):
         data = {
             'old_password': self.user_old_password,
-            'password': 'coolpass0@'
+            'password': 'coolpass0@',
         }
         response = self.client.patch(self.url, data=data, format='json')
         self.user.refresh_from_db()
@@ -360,7 +360,7 @@ class TestFollowerList(APITestCase):
         response = self.client.get(reverse('follower-list', args=[self.user1.id]))
         expected = []
         for follow in self.all_followers:
-            data = {'user': UserSerializer(follow.follower, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
+            data = {'profile': ProfileSerializer(follow.follower.profile, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['results'], expected)
@@ -377,7 +377,7 @@ class TestFollowedList(APITestCase):
         response = self.client.get(reverse('followed-list', args=[self.user1.id]))
         expected = []
         for follow in self.all_following:
-            data = {'user': UserSerializer(follow.followed, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
+            data = {'profile': ProfileSerializer(follow.followed.profile, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['results'], expected)

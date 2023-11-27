@@ -3,3 +3,4 @@ djangorestframework
 python-decouple
 factory-boy
 djangorestframework-simplejwt
+django-filter

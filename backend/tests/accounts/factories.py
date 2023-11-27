@@ -1,5 +1,5 @@
 import factory
-from accounts.models import User, Follow
+from accounts.models import User, Follow, Profile
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -17,5 +17,4 @@ class FollowFactory(factory.django.DjangoModelFactory):
         
     followed = factory.SubFactory(UserFactory)
     follower = factory.SubFactory(UserFactory)
-    
     

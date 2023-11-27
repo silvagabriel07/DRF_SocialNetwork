@@ -4,6 +4,7 @@ from accounts.models import User, Profile, Follow
 from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer, MessageSerializer, FollowerSerializer, FollowedSerializer
 from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
+from accounts.filters import UserFilter, ProfileFilter, FollowerFilter, FollowedFilter
 # Create your views here.
 
 class UserDetail(generics.RetrieveAPIView):
@@ -16,6 +17,7 @@ user_detail_view = UserDetail.as_view()
 class UserList(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    filterset_class = UserFilter
     
 user_list_view = UserList.as_view()
 
@@ -80,7 +82,9 @@ profile_detail_view = ProfileDetail.as_view()
 class ProfileList(generics.ListAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    
+    filterset_class = ProfileFilter
+
+
 profile_list_view = ProfileList.as_view()
 
 
@@ -117,6 +121,7 @@ class FollowUser(generics.CreateAPIView):
             
 follow_user_view = FollowUser.as_view()
 
+
 class UnfollowUser(generics.DestroyAPIView):
     def delete(self, request, pk):
         request_profile = request.user.profile
@@ -139,6 +144,7 @@ unfollow_user_view = UnfollowUser.as_view()
 class FollowerList(generics.ListAPIView):
     serializer_class = FollowerSerializer
     queryset = Follow.objects.all()
+    filterset_class = FollowerFilter
     
     def get_queryset(self):
         user_followed_id = self.kwargs['pk']
@@ -150,7 +156,8 @@ follower_list_view = FollowerList.as_view()
 
 class FollowedList(generics.ListAPIView):
     serializer_class = FollowedSerializer
-    
+    filterset_class = FollowedFilter
+
     def get_queryset(self):
         user_follower_id = self.kwargs['pk']
         return Follow.objects.filter(follower_id=user_follower_id)

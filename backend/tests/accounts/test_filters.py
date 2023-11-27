@@ -2,13 +2,13 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from tests.accounts.factories import UserFactory, FollowFactory
 from django.urls import reverse
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 class TestUserFilter(APITestCase):
     def setUp(self) -> None:
-        self.user1 = UserFactory(username='John Doe', is_active=False)
-        self.user2 = UserFactory(username='Jane Doe', is_active=True)
+        self.user1 = UserFactory(username='JohnDoe', is_active=False)
+        self.user2 = UserFactory(username='JaneDoe', is_active=True)
         self.endoint_using_the_filter = reverse('user-list')
     
     def test_is_active_filter_field(self):
@@ -16,26 +16,26 @@ class TestUserFilter(APITestCase):
         response = self.client.get(self.endoint_using_the_filter, params)
         
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Jane Doe')
-        self.assertNotContains(response, 'John Doe')
+        self.assertContains(response, 'JaneDoe')
+        self.assertNotContains(response, 'JohnDoe')
         
     def test_username_filter_field(self):        
         params = {'username': 'John'}
         response = self.client.get(self.endoint_using_the_filter, params)
                 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertContains(response, 'John Doe')
-        self.assertNotContains(response, 'Jane Doe')
+        self.assertContains(response, 'JohnDoe')
+        self.assertNotContains(response, 'JaneDoe')
 
 
 class TestProfileFilter(APITestCase):
     def setUp(self) -> None:
-        user1 = UserFactory(username='Paul 1')
+        user1 = UserFactory(username='Paul1')
         self.profile1 = user1.profile
         self.profile1.name = 'John Doe'
         self.profile1.bio = 'Lorem ipsum more'
 
-        user2 = UserFactory(username='Paul 2')
+        user2 = UserFactory(username='Paul2')
         self.profile2 = user2.profile
         self.profile2.name = 'Jane Doe'
         self.profile2.bio = 'Lorem ipsum less'
@@ -63,9 +63,9 @@ class TestProfileFilter(APITestCase):
         params = {'search': '1'}
         response = self.client.get(self.endoint_using_the_filter, params)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Paul 1')
+        self.assertContains(response, 'Paul1')
         self.assertNotContains(response, 'Jane Doe')
-        self.assertNotContains(response, 'Paul 2')
+        self.assertNotContains(response, 'Paul2')
 
 
 class TestFollowerFilter(APITestCase):
@@ -73,11 +73,11 @@ class TestFollowerFilter(APITestCase):
         self.user = UserFactory()
         self.follower1 = FollowFactory(followed=self.user).follower
         self.follower1.profile.name = 'John Doe' 
-        self.follower1.username = 'Paul 12'
+        self.follower1.username = 'Paul12'
         
         self.follower2 = FollowFactory(followed=self.user).follower
         self.follower2.profile.name = 'Jane Doe'
-        self.follower2.username = 'Paul 13'
+        self.follower2.username = 'Paul13'
         
         self.follower1.save()
         self.follower2.save()
@@ -93,18 +93,18 @@ class TestFollowerFilter(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Jane Doe')
         self.assertNotContains(response, 'John Doe')
-        self.assertNotContains(response, 'Paul 12')
+        self.assertNotContains(response, 'Paul12')
         
     def test_search_field_filtering_by_username(self):
         params = {'search': '12'}
         response = self.client.get(self.endoint_using_the_filter, params)
         
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Paul 12')
+        self.assertContains(response, 'Paul12')
         self.assertNotContains(response, 'Jane Doe')
-        self.assertNotContains(response, 'Paul 13')
+        self.assertNotContains(response, 'Paul13')
 
-    def test_created_at_field_filter(self):
+    def test_created_at_filter_field(self):
         follow1 = self.follower1.following.get(followed=self.user)
         follow1.created_at = datetime(year=2023, month=9, day=10) 
         follow1.save()
@@ -156,7 +156,7 @@ class TestFollowedFilter(APITestCase):
         self.assertNotContains(response, 'Jane Doe')
         self.assertNotContains(response, 'Paul 13')
 
-    def test_created_at_field_filter(self):
+    def test_created_at_filter_field(self):
         follow1 = self.followed1.followers.get(follower=self.user)
         follow1.created_at = datetime(year=2023, month=9, day=10) 
         follow1.save()

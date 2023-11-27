@@ -3,11 +3,13 @@ from rest_framework.views import Response, APIView
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
 from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
 from accounts.serializers import MessageSerializer
+from posts.filters import PostFilter
 # Create your views here.
 
 class PostListCreate(generics.ListCreateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+    filterset_class = PostFilter
             
 post_list_create_view = PostListCreate.as_view()
 

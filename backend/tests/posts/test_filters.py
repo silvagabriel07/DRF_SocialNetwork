@@ -156,7 +156,6 @@ class TestPostLikeFilter(APITestCase):
     def test_search_user_field_filtering_by_name(self):
         params = {'search_user': 'saka'}
         response = self.client.get(self.endpoint_using_the_filter, params)
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, 'Akasaka')
         self.assertNotContains(response, 'Fujiwara')

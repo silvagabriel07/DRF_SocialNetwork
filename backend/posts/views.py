@@ -1,5 +1,5 @@
 from rest_framework import generics, status
-from rest_framework.views import Response, APIView
+from rest_framework.views import Response
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
 from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
 from accounts.serializers import MessageSerializer

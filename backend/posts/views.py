@@ -3,7 +3,7 @@ from rest_framework.views import Response, APIView
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
 from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
 from accounts.serializers import MessageSerializer
-from posts.filters import PostFilter
+from posts.filters import PostFilter, TagFilter, CommentFilter, PostLikeFilter, CommentLikeFilter
 # Create your views here.
 
 class PostListCreate(generics.ListCreateAPIView):
@@ -89,13 +89,15 @@ dislike_post_view = DislikePost.as_view()
 class TagList(generics.ListAPIView):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    
+    filterset_class = TagFilter
+
 tag_list_view = TagList.as_view()
 
 
 class CommentListCreate(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    filterset_class = CommentFilter
     
     def get_queryset(self):
         post_id = self.kwargs['pk']
@@ -179,6 +181,7 @@ dislike_comment_view = DislikeComment.as_view()
 class CommentLikeList(generics.ListAPIView):
     queryset = CommentLike.objects.all()
     serializer_class = CommentLikeSerializer
+    filterset_class = CommentLikeFilter
     
     def get_queryset(self):
         comment_id = self.kwargs['pk']
@@ -191,6 +194,7 @@ comment_like_list_view = CommentLikeList.as_view()
 class PostLikeList(generics.ListAPIView):
     queryset = PostLike.objects.all()
     serializer_class = PostLikeSerializer
+    filterset_class = PostLikeFilter
     
     def get_queryset(self):
         post_id = self.kwargs['pk']

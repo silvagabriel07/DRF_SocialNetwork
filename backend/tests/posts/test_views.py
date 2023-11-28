@@ -1,9 +1,9 @@
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIRequestFactory
 from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory, CommentFactory, CommentLikeFactory
 from tests.accounts.factories import UserFactory
 
 from posts.models import Post, Tag, Comment
-from posts.serializers import PostSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
+from posts.serializers import PostSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer, ProfileSimpleSerializer
 from django.urls import reverse
 from rest_framework import status
 from django.utils import timezone
@@ -17,7 +17,9 @@ class TestPostListCreate(APITestCase):
         self.client.force_login(self.user1)
 
         self.tags = TagFactory.create_batch(3)
-
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
+        
     def test_list_all_nested_tags_in_post(self):
         post = PostFactory()
         post.tags.set(self.tags)
@@ -37,7 +39,7 @@ class TestPostListCreate(APITestCase):
         PostFactory.create_batch(3)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        serializer = PostSerializer(Post.objects.all(), many=True)
+        serializer = PostSerializer(Post.objects.all(), many=True, context={'request': self.request})
         self.assertEqual(response.data['results'], serializer.data)
 
     def test_create_post_with_more_than_30_tags_fails(self):
@@ -65,7 +67,7 @@ class TestPostListCreate(APITestCase):
             'id': response.data['id'],
             'title': data['title'],
             'content': data['content'],
-            'author': self.user1.id,
+            'author': ProfileSimpleSerializer(self.user1.profile, context={'request': response.wsgi_request}).data,
             #    'nested_tags': data['tags'],     We already test this field separetely.
             'created_at': response.data['created_at'],
             'total_likes': 0,
@@ -86,11 +88,13 @@ class TestPostDetail(APITestCase):
         self.url = reverse('post-detail', args=[self.user1.id])
 
         self.tags = TagFactory.create_batch(3)
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
 
     def test_return_data(self):
         post = PostFactory()
         response = self.client.get(self.url)
-        serializer = PostSerializer(post)
+        serializer = PostSerializer(post, context={'request': self.request})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
 
@@ -148,7 +152,7 @@ class TestPostUpdate(APITestCase):
             'id': self.post.id,
             'title': data['title'],
             'content': data['content'],
-            'author': self.user1.id,
+            'author': ProfileSimpleSerializer(self.user1.profile, context={'request': response.wsgi_request}).data,
             'nested_tags': [{'id': tag.id, 'name': tag.name} for tag in all_tags],
             'created_at': response.data['created_at'],
             'total_likes': 0,

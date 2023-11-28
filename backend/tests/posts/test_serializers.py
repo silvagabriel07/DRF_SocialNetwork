@@ -1,5 +1,5 @@
 from rest_framework.test import APITestCase, APIRequestFactory
-from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
+from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer, ProfileSimpleSerializer
 from tests.posts.factories import PostFactory, TagFactory, CommentFactory, CommentLikeFactory, PostLikeFactory
 from tests.accounts.factories import UserFactory
 from rest_framework.exceptions import ValidationError
@@ -12,14 +12,17 @@ class TestPostSerializer(APITestCase):
         self.tags = TagFactory.create_batch(3)
         self.post = PostFactory()
         self.post.tags.set(self.tags)
-        self.serializer = PostSerializer(self.post)
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
+        self.serializer = PostSerializer(self.post, context={'request': self.request})
+
         
     def test_post_object_serialized(self):
         expected = {
             'id': self.post.id,
             'title': self.post.title,
             'content': self.post.content,
-            'author': self.post.author.id,
+            'author': ProfileSimpleSerializer(self.post.author.profile, context={'request': self.request}).data,
             'nested_tags': [{'id': tag.id, 'name': tag.name} for tag in self.tags],
             'created_at': self.post.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'total_likes': self.post.total_likes,
@@ -62,7 +65,8 @@ class TestPostUpdateSerializer(APITestCase):
     def setUp(self) -> None:
         self.user = UserFactory()
         self.post = PostFactory()
-        self.serializer = PostUpdateSerializer(self.post)
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
 
     def test_post_data_updated_serialized(self):
         tags = [tag.id for tag in TagFactory.create_batch(3)]
@@ -71,7 +75,7 @@ class TestPostUpdateSerializer(APITestCase):
             'content': 'Updated content',
             'tags': tags
         }
-        serializer = PostUpdateSerializer(instance=self.post, data=data)
+        serializer = PostUpdateSerializer(instance=self.post, data=data, context={'request': self.request})
         self.assertTrue(serializer.is_valid())
         serializer.save()
         self.post.refresh_from_db()
@@ -82,7 +86,7 @@ class TestPostUpdateSerializer(APITestCase):
             'id': self.post.id,
             'title': self.post.title,
             'content': self.post.content,
-            'author': self.post.author.id,
+            'author': ProfileSimpleSerializer(self.post.author.profile, context={'request': self.request}).data,
             'nested_tags': [{'id': tag.id, 'name': tag.name} for tag in self.post.tags.all()],
             'created_at': self.post.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'total_likes': self.post.total_likes,

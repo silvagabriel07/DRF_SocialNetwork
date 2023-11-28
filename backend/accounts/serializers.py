@@ -107,19 +107,28 @@ class ProfileSerializer(serializers.ModelSerializer):
         return instance
 
 
+class ProfileSimpleSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    class Meta:
+        model = Profile
+        fields = [
+            'id', 'name', 'picture', 'user',
+        ]
+
+
 class MessageSerializer(serializers.Serializer):
     message = serializers.CharField()
 
 
 class FollowerSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer(source='follower.profile')
+    profile = ProfileSimpleSerializer(source='follower.profile')
     class Meta:
         model = Follow
         fields = ['profile', 'created_at']
 
 
 class FollowedSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer(source='followed.profile')    
+    profile = ProfileSimpleSerializer(source='followed.profile')    
     class Meta:
         model = Follow
         fields = ['profile', 'created_at']

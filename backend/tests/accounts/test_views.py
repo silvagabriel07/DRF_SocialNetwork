@@ -2,7 +2,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from accounts.models import Profile, User
 from tests.accounts.factories import UserFactory, FollowFactory
-from accounts.serializers import UserSerializer, ProfileSerializer
+from accounts.serializers import UserSerializer, ProfileSerializer, ProfileSimpleSerializer
 from django.urls import reverse
 from django.test import override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -360,7 +360,7 @@ class TestFollowerList(APITestCase):
         response = self.client.get(reverse('follower-list', args=[self.user1.id]))
         expected = []
         for follow in self.all_followers:
-            data = {'profile': ProfileSerializer(follow.follower.profile, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
+            data = {'profile': ProfileSimpleSerializer(follow.follower.profile, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['results'], expected)
@@ -377,7 +377,7 @@ class TestFollowedList(APITestCase):
         response = self.client.get(reverse('followed-list', args=[self.user1.id]))
         expected = []
         for follow in self.all_following:
-            data = {'profile': ProfileSerializer(follow.followed.profile, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
+            data = {'profile': ProfileSimpleSerializer(follow.followed.profile, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['results'], expected)

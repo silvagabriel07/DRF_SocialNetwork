@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
+from accounts.serializers import ProfileSimpleSerializer
 from django.core.exceptions import ValidationError
 
 class TagSerializer(serializers.ModelSerializer):
@@ -12,6 +13,7 @@ class PostSerializer(serializers.ModelSerializer):
     # 'nested_tags' field is just to be see the tags and return them serialized 
     # 'tags' field expects a list of tag ids, and it's what we use as 'input'
     nested_tags = serializers.SerializerMethodField(read_only=True)
+    author = ProfileSimpleSerializer(source='author.profile', required=False)
     
     def get_nested_tags(self, obj):
         ids = [tag.id for tag in obj.tags.all()]
@@ -27,7 +29,7 @@ class PostSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'id': {'read_only': True},
             'created_at': {'read_only': True},
-            'author': {'read_only': True},
+            'author': {'read_only': True, 'required': False},
             'tags': {'write_only': True, 'required': False}, 
             'nested_tags': {'read_only': True},
         }
@@ -49,6 +51,7 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostUpdateSerializer(PostSerializer):
+
     class Meta:
         model = Post
         fields = [
@@ -57,7 +60,7 @@ class PostUpdateSerializer(PostSerializer):
         extra_kwargs = {
             'id': {'read_only': True},
             'created_at': {'read_only': True},
-            'author': {'read_only': True},
+            'author': {'read_only': True, 'required': False},
             'nested_tags': {'read_only': True},
             'tags': {'write_only': True, 'required': False}, 
             'title': {'required': False},
@@ -83,6 +86,7 @@ class PostUpdateSerializer(PostSerializer):
     
 
 class CommentSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Comment
         fields = ['id', 'content', 'post', 'author', 'created_at', 'total_likes']

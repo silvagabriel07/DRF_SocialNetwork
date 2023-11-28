@@ -86,6 +86,7 @@ class PostUpdateSerializer(PostSerializer):
     
 
 class CommentSerializer(serializers.ModelSerializer):
+    author = ProfileSimpleSerializer(source='author.profile', required=False)
     
     class Meta:
         model = Comment
@@ -105,13 +106,17 @@ class CommentSerializer(serializers.ModelSerializer):
     
     
 class CommentLikeSerializer(serializers.ModelSerializer):
+    profile = ProfileSimpleSerializer(source='user.profile', required=False)
+
     class Meta:
         model = CommentLike
-        fields = '__all__'
+        fields = ['id', 'profile', 'comment', 'created_at']
 
 
 class PostLikeSerializer(serializers.ModelSerializer):
+    profile = ProfileSimpleSerializer(source='user.profile', required=False)
+                                     
     class Meta:
         model = PostLike
-        fields = '__all__'
+        fields = ['id', 'profile', 'post', 'created_at']
         

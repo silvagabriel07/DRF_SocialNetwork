@@ -233,12 +233,14 @@ class TestPostDelete(APITestCase):
         self.assertFalse(Post.objects.all().exists())
 
 
-class TestpostLikeList(APITestCase):
+class TestPostLikeList(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.post = PostFactory(author=self.user1)
         self.client.force_login(self.user1)
         self.url = reverse('post-like-list', args=[self.post.id])
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
 
     def test_list_all_post_likes(self):
         all_postlikes = []
@@ -246,7 +248,7 @@ class TestpostLikeList(APITestCase):
             all_postlikes.append(PostLikeFactory(post=self.post))
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        serializer = PostLikeSerializer(all_postlikes, many=True)
+        serializer = PostLikeSerializer(all_postlikes, many=True, context={'request': self.request})
         self.assertEqual(response.data['results'], serializer.data)
 
 
@@ -345,6 +347,8 @@ class TestCommentListCreate(APITestCase):
         self.post = PostFactory()
         self.url = reverse('comment-list-create', args=[self.post.id])
         self.client.force_login(self.user1)
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
 
     def test_list_all_comments(self):
         all_tags = []
@@ -352,7 +356,7 @@ class TestCommentListCreate(APITestCase):
             all_tags.append(CommentFactory(post=self.post))
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        serializer = CommentSerializer(all_tags, many=True)
+        serializer = CommentSerializer(all_tags, many=True, context={'request': self.request})
         self.assertEqual(response.data['results'], serializer.data)
 
     def test_create_comment_successfully(self):
@@ -364,7 +368,7 @@ class TestCommentListCreate(APITestCase):
             'id': response.data['id'],
             'content': data['content'],
             'post': self.post.id,
-            'author': self.user1.id,
+            'author': ProfileSimpleSerializer(self.user1.profile, context={'request': self.request}).data,
             'created_at': response.data['created_at'],
             'total_likes': 0,
         }
@@ -379,10 +383,12 @@ class TestCommentDetail(APITestCase):
         self.post = PostFactory()
         self.comment = CommentFactory(post=self.post, author=self.user1)
         self.url = reverse('comment-detail', args=[self.post.id])
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
 
     def test_return_data(self):
         response = self.client.get(self.url)
-        serializer = CommentSerializer(self.comment)
+        serializer = CommentSerializer(self.comment, context={'request': self.request})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
 
@@ -494,6 +500,8 @@ class TestCommentLikeList(APITestCase):
         self.comment = CommentFactory(author=self.user1)
         self.client.force_login(self.user1)
         self.url = reverse('comment-like-list', args=[self.comment.id])
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
 
     def test_list_all_comment_likes(self):
         all_commentlikes = []
@@ -501,5 +509,5 @@ class TestCommentLikeList(APITestCase):
             all_commentlikes.append(CommentLikeFactory(comment=self.comment))
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        serializer = CommentLikeSerializer(all_commentlikes, many=True)
+        serializer = CommentLikeSerializer(all_commentlikes, many=True, context={'request': self.request})
         self.assertEqual(response.data['results'], serializer.data)

@@ -1,5 +1,6 @@
 from rest_framework.test import APITestCase, APIRequestFactory
 from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer, ProfileSimpleSerializer
+from accounts.serializers import UserSerializer
 from tests.posts.factories import PostFactory, TagFactory, CommentFactory, CommentLikeFactory, PostLikeFactory
 from tests.accounts.factories import UserFactory
 from rest_framework.exceptions import ValidationError
@@ -151,13 +152,15 @@ class TestCommentSerializer(APITestCase):
         self.user1 = UserFactory()
         self.post = PostFactory()
         self.comment = CommentFactory(post=self.post)
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
     
     def test_comment_object_serialized(self):
-        serializer = CommentSerializer(self.comment)
+        serializer = CommentSerializer(self.comment, context={'request': self.request})
         expected = {
             'post': self.comment.post.id,
             'id': self.comment.id,
-            'author': self.comment.author.id,
+            'author': ProfileSimpleSerializer(self.comment.author.profile, context={'request': self.request}).data,
             'content': self.comment.content,
             'created_at': self.comment.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'total_likes': 0,
@@ -183,31 +186,35 @@ class TestCommentLikeSerializer(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.comment = CommentFactory()
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
 
     def test_data_returned(self):
         commentlike = CommentLikeFactory(user=self.user1, comment=self.comment)
         expected = {
             'id': commentlike.id,
             'comment': self.comment.id,
-            'user': self.user1.id,
+            'profile': ProfileSimpleSerializer(self.user1.profile, context={'request': self.request}).data,
             'created_at': commentlike.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         }
-        serializer = CommentLikeSerializer(commentlike)
+        serializer = CommentLikeSerializer(commentlike, context={'request': self.request})
         self.assertEqual(serializer.data, expected)
-        
+
 
 class TestPostLikeSerializer(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.post = PostFactory()
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
 
     def test_data_returned(self):
         postlike = PostLikeFactory(user=self.user1, post=self.post)
         expected = {
             'id': postlike.id,
             'post': self.post.id,
-            'user': self.user1.id,
+            'profile': ProfileSimpleSerializer(self.user1.profile, context={'request': self.request}).data,
             'created_at': postlike.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         }
-        serializer = PostLikeSerializer(postlike)
+        serializer = PostLikeSerializer(postlike, context={'request': self.request})
         self.assertEqual(serializer.data, expected)

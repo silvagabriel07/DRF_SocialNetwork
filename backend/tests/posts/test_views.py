@@ -10,7 +10,7 @@ from django.utils import timezone
 from unittest.mock import patch
 
 
-class TestPostListCreate(APITestCase):
+class TestPostListCreateView(APITestCase):
     def setUp(self) -> None:
         self.url = reverse('post-list-create')
         self.user1 = UserFactory()
@@ -81,7 +81,7 @@ class TestPostListCreate(APITestCase):
             [tag.id for tag in post_created.tags.all()], data['tags'])
 
 
-class TestPostDetail(APITestCase):
+class TestPostDetailView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.client.force_login(self.user1)
@@ -99,7 +99,7 @@ class TestPostDetail(APITestCase):
         self.assertEqual(response.data, serializer.data)
 
 
-class TestPostUpdate(APITestCase):
+class TestPostUpdateView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.post = PostFactory(author=self.user1)
@@ -210,7 +210,7 @@ class TestPostUpdate(APITestCase):
         self.assertEqual(response.data, expected)
 
 
-class TestPostDelete(APITestCase):
+class TestPostDeleteView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.another_user = UserFactory()
@@ -233,7 +233,7 @@ class TestPostDelete(APITestCase):
         self.assertFalse(Post.objects.all().exists())
 
 
-class TestPostLikeList(APITestCase):
+class TestPostLikeListView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.post = PostFactory(author=self.user1)
@@ -252,7 +252,7 @@ class TestPostLikeList(APITestCase):
         self.assertEqual(response.data['results'], serializer.data)
 
 
-class TestLikePost(APITestCase):
+class TestLikePostView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.user2 = UserFactory()
@@ -291,7 +291,7 @@ class TestLikePost(APITestCase):
         self.assertEqual(response.data, expected)
 
 
-class TestDislikePost(APITestCase):
+class TestDislikePostView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.user2 = UserFactory()
@@ -329,7 +329,7 @@ class TestDislikePost(APITestCase):
         self.assertEqual(response.data, expected)
 
 
-class TestTagList(APITestCase):
+class TestTagListView(APITestCase):
     def setUp(self) -> None:
         self.url = reverse('tag-list')
 
@@ -341,7 +341,7 @@ class TestTagList(APITestCase):
         self.assertEqual(response.data['results'], serializer.data)
 
 
-class TestCommentListCreate(APITestCase):
+class TestCommentListCreateView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.post = PostFactory()
@@ -376,7 +376,7 @@ class TestCommentListCreate(APITestCase):
         self.assertEqual(response.data, expected)
 
 
-class TestCommentDetail(APITestCase):
+class TestCommentDetailView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.client.force_login(self.user1)
@@ -393,7 +393,7 @@ class TestCommentDetail(APITestCase):
         self.assertEqual(response.data, serializer.data)
 
 
-class TestCommentDelete(APITestCase):
+class TestCommentDeleteView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.another_user = UserFactory()
@@ -417,7 +417,7 @@ class TestCommentDelete(APITestCase):
         self.assertFalse(Comment.objects.all().exists())
 
 
-class TestLikeComment(APITestCase):
+class TestLikeCommentView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.user2 = UserFactory()
@@ -456,7 +456,7 @@ class TestLikeComment(APITestCase):
         self.assertEqual(response.data, expected)
 
 
-class TestDislikecomment(APITestCase):
+class TestDislikecommentView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.user2 = UserFactory()
@@ -494,7 +494,7 @@ class TestDislikecomment(APITestCase):
         self.assertEqual(response.data, expected)
 
 
-class TestCommentLikeList(APITestCase):
+class TestCommentLikeListView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.comment = CommentFactory(author=self.user1)

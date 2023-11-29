@@ -1,29 +1,32 @@
 from rest_framework import generics, permissions, status, serializers
 from rest_framework.views import Response
 from accounts.models import User, Profile, Follow
-from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer, MessageSerializer, FollowerSerializer, FollowedSerializer
+from accounts.serializers import (
+    UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer,
+    MessageSerializer, FollowerSerializer, FollowedSerializer
+)
 from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.filters import UserFilter, ProfileFilter, FollowerFilter, FollowedFilter
 from drf_spectacular.utils import extend_schema
 # Create your views here.
 
-class UserDetail(generics.RetrieveAPIView):
+class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     
-user_detail_view = UserDetail.as_view()
+user_detail_view = UserDetailView.as_view()
 
 
-class UserList(generics.ListAPIView):
+class UserListView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     filterset_class = UserFilter
     
-user_list_view = UserList.as_view()
+user_list_view = UserListView.as_view()
 
 
-class UserRegistration(generics.CreateAPIView):
+class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserCreationSerializer
     permission_classes = [permissions.AllowAny]
@@ -39,10 +42,10 @@ class UserRegistration(generics.CreateAPIView):
             'user': UserCreationSerializer(user, context=self.get_serializer_context()).data
         }, status=status.HTTP_201_CREATED)
 
-user_registration_view = UserRegistration.as_view()
+user_registration_view = UserRegistrationView.as_view()
 
 
-class UserUpdate(generics.UpdateAPIView):
+class UserUpdateView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserUpdateSerializer
     
@@ -55,10 +58,10 @@ class UserUpdate(generics.UpdateAPIView):
 
         return super().update(request, *args, **kwargs)
 
-user_update_view = UserUpdate.as_view()    
+user_update_view = UserUpdateView.as_view()    
 
 
-class UserDelete(generics.DestroyAPIView):
+class UserDeleteView(generics.DestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     
@@ -70,25 +73,25 @@ class UserDelete(generics.DestroyAPIView):
             return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
         return super().destroy(request, *args, **kwargs)
 
-user_delete_view = UserDelete.as_view()    
+user_delete_view = UserDeleteView.as_view()    
 
 
-class ProfileDetail(generics.RetrieveAPIView):
+class ProfileDetailView(generics.RetrieveAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     
-profile_detail_view = ProfileDetail.as_view()
+profile_detail_view = ProfileDetailView.as_view()
 
 
-class ProfileList(generics.ListAPIView):
+class ProfileListView(generics.ListAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     filterset_class = ProfileFilter
 
-profile_list_view = ProfileList.as_view()
+profile_list_view = ProfileListView.as_view()
 
 
-class ProfileUpdate(generics.UpdateAPIView):
+class ProfileUpdateView(generics.UpdateAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     
@@ -100,7 +103,8 @@ class ProfileUpdate(generics.UpdateAPIView):
             return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
         return super().update(request, *args, **kwargs)
     
-profile_update_view = ProfileUpdate.as_view()
+profile_update_view = ProfileUpdateView.as_view()
+
 
 @extend_schema(
     summary="Follow a User",
@@ -111,7 +115,7 @@ profile_update_view = ProfileUpdate.as_view()
         400: {"detail": "You are already following this user."}
         },
 )
-class FollowUser(generics.CreateAPIView):
+class FollowUserView(generics.CreateAPIView):
     serializer_class = MessageSerializer
 
     def post(self, request, pk):
@@ -129,7 +133,7 @@ class FollowUser(generics.CreateAPIView):
         serializer = MessageSerializer({'message': 'You have successfully followed the user.'})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
             
-follow_user_view = FollowUser.as_view()
+follow_user_view = FollowUserView.as_view()
 
 
 @extend_schema(
@@ -141,7 +145,7 @@ follow_user_view = FollowUser.as_view()
         400: {"detail": "You were not following this user."}
         },
 )
-class UnfollowUser(generics.DestroyAPIView):
+class UnfollowUserView(generics.DestroyAPIView):
     serializer_class = MessageSerializer
 
     def delete(self, request, pk):
@@ -159,10 +163,10 @@ class UnfollowUser(generics.DestroyAPIView):
         serializer = MessageSerializer({'message': 'You have successfully unfollowed the user.'})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-unfollow_user_view = UnfollowUser.as_view()
+unfollow_user_view = UnfollowUserView.as_view()
 
 
-class FollowerList(generics.ListAPIView):
+class FollowerListView(generics.ListAPIView):
     queryset = Follow.objects.all()
     serializer_class = FollowerSerializer
     filterset_class = FollowerFilter
@@ -172,10 +176,10 @@ class FollowerList(generics.ListAPIView):
         qs = super().get_queryset()
         return qs.filter(followed_id=user_followed_id)
          
-follower_list_view = FollowerList.as_view()
+follower_list_view = FollowerListView.as_view()
 
 
-class FollowedList(generics.ListAPIView):
+class FollowedListView(generics.ListAPIView):
     queryset = Follow.objects.all()
     serializer_class = FollowedSerializer
     filterset_class = FollowedFilter
@@ -185,4 +189,4 @@ class FollowedList(generics.ListAPIView):
         qs = super().get_queryset()
         return qs.filter(follower_id=user_follower_id)
          
-followed_list_view = FollowedList.as_view()
+followed_list_view = FollowedListView.as_view()

@@ -1,28 +1,31 @@
 from rest_framework import generics, status
 from rest_framework.views import Response
+from drf_spectacular.utils import extend_schema
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
-from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
+from posts.serializers import (
+    PostSerializer, PostUpdateSerializer, TagSerializer,
+    CommentSerializer, CommentLikeSerializer, PostLikeSerializer,
+)
 from accounts.serializers import MessageSerializer
 from posts.filters import PostFilter, TagFilter, CommentFilter, PostLikeFilter, CommentLikeFilter
-from drf_spectacular.utils import extend_schema
 # Create your views here.
 
-class PostListCreate(generics.ListCreateAPIView):
+class PostListCreateView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     filterset_class = PostFilter
             
-post_list_create_view = PostListCreate.as_view()
+post_list_create_view = PostListCreateView.as_view()
 
 
-class PostDetail(generics.RetrieveAPIView):
+class PostDetailView(generics.RetrieveAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     
-post_detail_view = PostDetail.as_view()
+post_detail_view = PostDetailView.as_view()
 
 
-class PostUpdate(generics.UpdateAPIView):
+class PostUpdateView(generics.UpdateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostUpdateSerializer
     
@@ -34,10 +37,10 @@ class PostUpdate(generics.UpdateAPIView):
 
         return super().update(request, *args, **kwargs)
 
-post_update_view = PostUpdate.as_view()
+post_update_view = PostUpdateView.as_view()
 
 
-class PostDelete(generics.DestroyAPIView):
+class PostDeleteView(generics.DestroyAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
         
@@ -50,7 +53,8 @@ class PostDelete(generics.DestroyAPIView):
         
         return super().destroy(request, *args, **kwargs)
 
-post_delete_view = PostDelete.as_view()
+post_delete_view = PostDeleteView.as_view()
+
 
 @extend_schema(
     summary="Like a Post",
@@ -61,7 +65,7 @@ post_delete_view = PostDelete.as_view()
         400: {"detail": "You are already liking this post."}
         },
 )
-class LikePost(generics.CreateAPIView):
+class LikePostView(generics.CreateAPIView):
     serializer_class = MessageSerializer
     
     def post(self, request, pk):
@@ -77,7 +81,7 @@ class LikePost(generics.CreateAPIView):
         serializer = MessageSerializer({'message': 'You have successfully liked the post.'})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-like_post_view = LikePost.as_view()
+like_post_view = LikePostView.as_view()
 
 
 @extend_schema(
@@ -89,7 +93,7 @@ like_post_view = LikePost.as_view()
         400: {"detail": "You were not liking this post."}
         },
 )
-class DislikePost(generics.DestroyAPIView):
+class DislikePostView(generics.DestroyAPIView):
     serializer_class = MessageSerializer
     def delete(self, request, pk):
         user = request.user
@@ -104,18 +108,18 @@ class DislikePost(generics.DestroyAPIView):
         serializer = MessageSerializer({'message': 'You have successfully disliked the post.'})
         return Response(serializer.data, status=status.HTTP_200_OK)
             
-dislike_post_view = DislikePost.as_view()
+dislike_post_view = DislikePostView.as_view()
 
 
-class TagList(generics.ListAPIView):
+class TagListView(generics.ListAPIView):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     filterset_class = TagFilter
 
-tag_list_view = TagList.as_view()
+tag_list_view = TagListView.as_view()
 
 
-class CommentListCreate(generics.ListCreateAPIView):
+class CommentListCreateView(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     filterset_class = CommentFilter
@@ -133,10 +137,10 @@ class CommentListCreate(generics.ListCreateAPIView):
             return Response({'detail': 'The post does not exist.'}, status=status.HTTP_404_NOT_FOUND)
         return serializer.save(author=self.request.user, post=post)
     
-comment_list_create_view = CommentListCreate.as_view()
+comment_list_create_view = CommentListCreateView.as_view()
 
 
-class CommentDetail(generics.RetrieveAPIView):
+class CommentDetailView(generics.RetrieveAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     
@@ -146,10 +150,10 @@ class CommentDetail(generics.RetrieveAPIView):
         return qs.filter(id=comment_id)
 
     
-comment_detail_view = CommentDetail.as_view()
+comment_detail_view = CommentDetailView.as_view()
 
 
-class CommentDelete(generics.DestroyAPIView):
+class CommentDeleteView(generics.DestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
         
@@ -162,7 +166,7 @@ class CommentDelete(generics.DestroyAPIView):
         
         return super().destroy(request, *args, **kwargs)
 
-comment_delete_view = CommentDelete.as_view()
+comment_delete_view = CommentDeleteView.as_view()
 
 
 @extend_schema(
@@ -174,7 +178,7 @@ comment_delete_view = CommentDelete.as_view()
         400: {"detail": "You are already liking this comment."}
         },
 )
-class LikeComment(generics.CreateAPIView):
+class LikeCommentView(generics.CreateAPIView):
     serializer_class = MessageSerializer
 
     def post(self, request, pk):
@@ -190,7 +194,7 @@ class LikeComment(generics.CreateAPIView):
         serializer = MessageSerializer({'message': 'You have successfully liked the comment.'})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-like_comment_view = LikeComment.as_view()
+like_comment_view = LikeCommentView.as_view()
 
 
 @extend_schema(
@@ -202,7 +206,7 @@ like_comment_view = LikeComment.as_view()
         400: {"detail": "You were not liking this comment."}
         },
 )
-class DislikeComment(generics.DestroyAPIView):
+class DislikeCommentView(generics.DestroyAPIView):
     serializer_class = MessageSerializer
 
     def delete(self, request, pk):
@@ -218,10 +222,10 @@ class DislikeComment(generics.DestroyAPIView):
         serializer = MessageSerializer({'message': 'You have successfully disliked the comment.'})
         return Response(serializer.data, status=status.HTTP_200_OK)
             
-dislike_comment_view = DislikeComment.as_view()
+dislike_comment_view = DislikeCommentView.as_view()
 
 
-class CommentLikeList(generics.ListAPIView):
+class CommentLikeListView(generics.ListAPIView):
     queryset = CommentLike.objects.all()
     serializer_class = CommentLikeSerializer
     filterset_class = CommentLikeFilter
@@ -231,10 +235,10 @@ class CommentLikeList(generics.ListAPIView):
         qs = super().get_queryset()
         return qs.filter(comment_id=comment_id)
         
-comment_like_list_view = CommentLikeList.as_view()
+comment_like_list_view = CommentLikeListView.as_view()
 
 
-class PostLikeList(generics.ListAPIView):
+class PostLikeListView(generics.ListAPIView):
     queryset = PostLike.objects.all()
     serializer_class = PostLikeSerializer
     filterset_class = PostLikeFilter
@@ -244,4 +248,4 @@ class PostLikeList(generics.ListAPIView):
         qs = super().get_queryset()
         return qs.filter(post_id=post_id)
         
-post_like_list_view = PostLikeList.as_view()
+post_like_list_view = PostLikeListView.as_view()

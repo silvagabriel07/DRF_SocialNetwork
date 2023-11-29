@@ -8,7 +8,7 @@ from django.test import override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 import tempfile
 
-class TestUserDetail(APITestCase):
+class TestUserDetailView(APITestCase):
     def setUp(self) -> None:
         self.user = UserFactory()
         self.url = reverse('user-detail', args=[self.user.id])
@@ -20,7 +20,7 @@ class TestUserDetail(APITestCase):
         self.assertEqual(response.data, serializer.data)
         
         
-class TestUserRegistration(APITestCase):
+class TestUserRegistrationView(APITestCase):
     def setUp(self) -> None:
         self.url = reverse('user-registration')
         self.user = UserFactory()
@@ -86,7 +86,7 @@ class TestUserRegistration(APITestCase):
         self.assertIn('This password is entirely numeric.', response.data['password'])        
 
         
-class TestUserList(APITestCase):
+class TestUserListView(APITestCase):
     def setUp(self) -> None:
         self.users = UserFactory.create_batch(3)
         self.url = reverse('user-list')
@@ -99,7 +99,7 @@ class TestUserList(APITestCase):
         self.assertEqual(response.data['results'], serializer.data)
 
 
-class TestUserUpdate(APITestCase):
+class TestUserUpdateView(APITestCase):
     def setUp(self) -> None:
         self.user_old_password = 'Testado123@'
         self.user = UserFactory(password=self.user_old_password)
@@ -152,7 +152,7 @@ class TestUserUpdate(APITestCase):
         self.assertIn('You are not authorized to perform this action.', response.data['request.user'])
 
 
-class TestUserDelete(APITestCase):
+class TestUserDeleteView(APITestCase):
     def setUp(self) -> None:
         self.user = UserFactory()
         self.url = reverse('user-delete', args=[self.user.id])
@@ -172,7 +172,7 @@ class TestUserDelete(APITestCase):
             self.assertIn('You are not authorized to perform this action.', response.data['request.user'])
         
 
-class TestProfileDetail(APITestCase):
+class TestProfileDetailView(APITestCase):
     def setUp(self) -> None:
         user = UserFactory()
         self.profile = Profile.objects.get(user=user)
@@ -185,7 +185,7 @@ class TestProfileDetail(APITestCase):
         self.assertEqual(response.data, serializer.data)
 
 
-class TestProfileList(APITestCase):
+class TestProfileListView(APITestCase):
     def setUp(self) -> None:
         UserFactory.create_batch(3)
         self.url = reverse('profile-list')
@@ -198,7 +198,7 @@ class TestProfileList(APITestCase):
         self.assertEqual(response.data['results'], serializer.data)
 
 
-class TestProfileUpdate(APITestCase):
+class TestProfileUpdateView(APITestCase):
     def setUp(self) -> None:
         user = UserFactory()
         self.client.force_login(user)
@@ -256,7 +256,7 @@ class TestProfileUpdate(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
 
-class TestFollowUser(APITestCase):
+class TestFollowUserView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.user2 = UserFactory()
@@ -307,7 +307,7 @@ class TestFollowUser(APITestCase):
         self.assertEqual(self.user1.following.all().count(), 0)
 
 
-class TestUnfollowUser(APITestCase):
+class TestUnfollowUserView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.user2 = UserFactory()
@@ -348,7 +348,7 @@ class TestUnfollowUser(APITestCase):
         self.assertEqual(self.user1.following.all().count(), 0)
         
 
-class TestFollowerList(APITestCase):
+class TestFollowerListView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.all_followers = []
@@ -365,7 +365,7 @@ class TestFollowerList(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['results'], expected)
 
-class TestFollowedList(APITestCase):
+class TestFollowedListView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
         self.all_following = []

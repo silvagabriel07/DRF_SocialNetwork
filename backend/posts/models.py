@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -35,15 +34,15 @@ class Post(models.Model):
         return self.title
 
     @property
-    def total_likes(self):
+    def total_likes(self)  -> int:
         return self.likes.count()
     
     @property
-    def total_comments(self):
+    def total_comments(self) -> int:
         return self.comments.count()
 
     @property
-    def total_tags(self):
+    def total_tags(self) -> int:
         return self.tags.count()        
     
 
@@ -75,7 +74,7 @@ class Comment(models.Model):
         return f'Comment | {self.author} -> {self.post}'
 
     @property
-    def total_likes(self):
+    def total_likes(self) -> int:
         return self.likes.count()
 
 

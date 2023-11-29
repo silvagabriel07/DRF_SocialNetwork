@@ -4,6 +4,7 @@ from posts.models import Post, Tag, Comment, CommentLike, PostLike
 from posts.serializers import PostSerializer, PostUpdateSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer
 from accounts.serializers import MessageSerializer
 from posts.filters import PostFilter, TagFilter, CommentFilter, PostLikeFilter, CommentLikeFilter
+from drf_spectacular.utils import extend_schema
 # Create your views here.
 
 class PostListCreate(generics.ListCreateAPIView):
@@ -51,8 +52,18 @@ class PostDelete(generics.DestroyAPIView):
 
 post_delete_view = PostDelete.as_view()
 
-
+@extend_schema(
+    summary="Like a Post",
+    description="Endpoint for liking a specific post.",
+    responses={
+        201: MessageSerializer,
+        404: {"detail": "The post does not exist."},
+        400: {"detail": "You are already liking this post."}
+        },
+)
 class LikePost(generics.CreateAPIView):
+    serializer_class = MessageSerializer
+    
     def post(self, request, pk):
         user = request.user
         try:
@@ -69,7 +80,17 @@ class LikePost(generics.CreateAPIView):
 like_post_view = LikePost.as_view()
 
 
+@extend_schema(
+    summary="Dislike a Post",
+    description="Endpoint for disliking a specific post.",
+    responses={
+        200: MessageSerializer,
+        404: {"detail": "The post does not exist."},
+        400: {"detail": "You were not liking this post."}
+        },
+)
 class DislikePost(generics.DestroyAPIView):
+    serializer_class = MessageSerializer
     def delete(self, request, pk):
         user = request.user
         try:
@@ -144,7 +165,18 @@ class CommentDelete(generics.DestroyAPIView):
 comment_delete_view = CommentDelete.as_view()
 
 
+@extend_schema(
+    summary="Like a Comment",
+    description="Endpoint for liking a specific comment.",
+    responses={
+        201: MessageSerializer,
+        404: {"detail": "The comment does not exist."},
+        400: {"detail": "You are already liking this comment."}
+        },
+)
 class LikeComment(generics.CreateAPIView):
+    serializer_class = MessageSerializer
+
     def post(self, request, pk):
         user = request.user
         try:
@@ -161,7 +193,18 @@ class LikeComment(generics.CreateAPIView):
 like_comment_view = LikeComment.as_view()
 
 
+@extend_schema(
+    summary="Dislike a Comment",
+    description="Endpoint for disliking a specific comment.",
+    responses={
+        200: MessageSerializer,
+        404: {"detail": "The comment does not exist."},
+        400: {"detail": "You were not liking this comment."}
+        },
+)
 class DislikeComment(generics.DestroyAPIView):
+    serializer_class = MessageSerializer
+
     def delete(self, request, pk):
         user = request.user
         try:

@@ -2,6 +2,8 @@ from rest_framework import serializers
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
 from accounts.serializers import ProfileSimpleSerializer
 from django.core.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema_field
+from typing import List
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,7 +17,8 @@ class PostSerializer(serializers.ModelSerializer):
     nested_tags = serializers.SerializerMethodField(read_only=True)
     author = ProfileSimpleSerializer(source='author.profile', required=False)
     
-    def get_nested_tags(self, obj):
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
+    def get_nested_tags(self, obj) -> List[str]:
         ids = [tag.id for tag in obj.tags.all()]
         tags = Tag.objects.filter(id__in=ids)
         serializer = TagSerializer(tags, many=True)

@@ -70,11 +70,11 @@ class Profile(models.Model):
 
     
     @property
-    def total_followers(self):
+    def total_followers(self) -> int:
         return self.user.followers.all().count()
     
     @property
-    def total_following(self):
+    def total_following(self) -> int:
         return self.user.following.all().count()
     
     # post methods    
@@ -92,7 +92,7 @@ class Profile(models.Model):
             raise ValidationError("You were not liking this post.")
         
     @property
-    def total_posts(self):
+    def total_posts(self) -> int:
         return self.user.posts.all().count()
     
     # comment methods

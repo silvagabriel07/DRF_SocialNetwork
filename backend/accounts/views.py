@@ -5,6 +5,7 @@ from accounts.serializers import UserSerializer, ProfileSerializer, UserCreation
 from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.filters import UserFilter, ProfileFilter, FollowerFilter, FollowedFilter
+from drf_spectacular.utils import extend_schema
 # Create your views here.
 
 class UserDetail(generics.RetrieveAPIView):
@@ -84,7 +85,6 @@ class ProfileList(generics.ListAPIView):
     serializer_class = ProfileSerializer
     filterset_class = ProfileFilter
 
-
 profile_list_view = ProfileList.as_view()
 
 
@@ -102,8 +102,18 @@ class ProfileUpdate(generics.UpdateAPIView):
     
 profile_update_view = ProfileUpdate.as_view()
 
-
+@extend_schema(
+    summary="Follow a User",
+    description="Endpoint for follow a specific user.",
+    responses={
+        201: MessageSerializer,
+        404: {"detail": "The user does not exist."},
+        400: {"detail": "You are already following this user."}
+        },
+)
 class FollowUser(generics.CreateAPIView):
+    serializer_class = MessageSerializer
+
     def post(self, request, pk):
         request_profile = request.user.profile
         try:
@@ -122,7 +132,18 @@ class FollowUser(generics.CreateAPIView):
 follow_user_view = FollowUser.as_view()
 
 
+@extend_schema(
+    summary="Unfollow a User",
+    description="Endpoint for unfollow a specific user.",
+    responses={
+        200: MessageSerializer,
+        404: {"detail": "The user does not exist."},
+        400: {"detail": "You were not following this user."}
+        },
+)
 class UnfollowUser(generics.DestroyAPIView):
+    serializer_class = MessageSerializer
+
     def delete(self, request, pk):
         request_profile = request.user.profile
         try:
@@ -142,8 +163,8 @@ unfollow_user_view = UnfollowUser.as_view()
 
 
 class FollowerList(generics.ListAPIView):
-    serializer_class = FollowerSerializer
     queryset = Follow.objects.all()
+    serializer_class = FollowerSerializer
     filterset_class = FollowerFilter
     
     def get_queryset(self):
@@ -155,11 +176,13 @@ follower_list_view = FollowerList.as_view()
 
 
 class FollowedList(generics.ListAPIView):
+    queryset = Follow.objects.all()
     serializer_class = FollowedSerializer
     filterset_class = FollowedFilter
 
     def get_queryset(self):
         user_follower_id = self.kwargs['pk']
-        return Follow.objects.filter(follower_id=user_follower_id)
+        qs = super().get_queryset()
+        return qs.filter(follower_id=user_follower_id)
          
 followed_list_view = FollowedList.as_view()

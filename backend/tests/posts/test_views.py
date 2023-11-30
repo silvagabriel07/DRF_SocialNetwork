@@ -1,6 +1,6 @@
 from rest_framework.test import APITestCase, APIRequestFactory
 from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory, CommentFactory, CommentLikeFactory
-from tests.accounts.factories import UserFactory
+from tests.accounts.factories import UserFactory, FollowFactory
 
 from posts.models import Post, Tag, Comment
 from posts.serializers import PostSerializer, TagSerializer, CommentSerializer, CommentLikeSerializer, PostLikeSerializer, ProfileSimpleSerializer
@@ -17,9 +17,7 @@ class TestPostListCreateView(APITestCase):
         self.client.force_login(self.user1)
 
         self.tags = TagFactory.create_batch(3)
-        factory = APIRequestFactory()
-        self.request = factory.get('/')
-        
+       
     def test_list_all_nested_tags_in_post(self):
         post = PostFactory()
         post.tags.set(self.tags)
@@ -39,7 +37,7 @@ class TestPostListCreateView(APITestCase):
         PostFactory.create_batch(3)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        serializer = PostSerializer(Post.objects.all(), many=True, context={'request': self.request})
+        serializer = PostSerializer(Post.objects.all(), many=True, context={'request': response.wsgi_request})
         self.assertEqual(response.data['results'], serializer.data)
 
     def test_create_post_with_more_than_30_tags_fails(self):
@@ -81,6 +79,25 @@ class TestPostListCreateView(APITestCase):
             [tag.id for tag in post_created.tags.all()], data['tags'])
 
 
+class TestPostFeedView(APITestCase):
+    def setUp(self) -> None:
+        self.url = reverse('post-list-create')
+        self.user1 = UserFactory()
+        self.client.force_login(self.user1)
+        
+        self.followed_user = FollowFactory(follower=self.user1).followed
+        self.another_user = UserFactory()
+    
+    def test_list_all_posts_from_followed_users(self):
+        post1 = PostFactory(author=self.followed_user)
+        post2 = PostFactory(author=self.another_user)
+        
+        response = self.client.get(reverse('post-feed-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0], PostSerializer(post1, context={'request': response.wsgi_request}).data)
+
+
 class TestPostDetailView(APITestCase):
     def setUp(self) -> None:
         self.user1 = UserFactory()
@@ -88,13 +105,10 @@ class TestPostDetailView(APITestCase):
         self.url = reverse('post-detail', args=[self.user1.id])
 
         self.tags = TagFactory.create_batch(3)
-        factory = APIRequestFactory()
-        self.request = factory.get('/')
-
     def test_return_data(self):
         post = PostFactory()
         response = self.client.get(self.url)
-        serializer = PostSerializer(post, context={'request': self.request})
+        serializer = PostSerializer(post, context={'request': response.wsgi_request})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
 
@@ -239,16 +253,13 @@ class TestPostLikeListView(APITestCase):
         self.post = PostFactory(author=self.user1)
         self.client.force_login(self.user1)
         self.url = reverse('post-like-list', args=[self.post.id])
-        factory = APIRequestFactory()
-        self.request = factory.get('/')
-
     def test_list_all_post_likes(self):
         all_postlikes = []
         for c in range(3):
             all_postlikes.append(PostLikeFactory(post=self.post))
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        serializer = PostLikeSerializer(all_postlikes, many=True, context={'request': self.request})
+        serializer = PostLikeSerializer(all_postlikes, many=True, context={'request': response.wsgi_request})
         self.assertEqual(response.data['results'], serializer.data)
 
 
@@ -347,16 +358,13 @@ class TestCommentListCreateView(APITestCase):
         self.post = PostFactory()
         self.url = reverse('comment-list-create', args=[self.post.id])
         self.client.force_login(self.user1)
-        factory = APIRequestFactory()
-        self.request = factory.get('/')
-
     def test_list_all_comments(self):
         all_tags = []
         for c in range(3):
             all_tags.append(CommentFactory(post=self.post))
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        serializer = CommentSerializer(all_tags, many=True, context={'request': self.request})
+        serializer = CommentSerializer(all_tags, many=True, context={'request': response.wsgi_request})
         self.assertEqual(response.data['results'], serializer.data)
 
     def test_create_comment_successfully(self):
@@ -368,7 +376,7 @@ class TestCommentListCreateView(APITestCase):
             'id': response.data['id'],
             'content': data['content'],
             'post': self.post.id,
-            'author': ProfileSimpleSerializer(self.user1.profile, context={'request': self.request}).data,
+            'author': ProfileSimpleSerializer(self.user1.profile, context={'request': response.wsgi_request}).data,
             'created_at': response.data['created_at'],
             'total_likes': 0,
         }
@@ -383,12 +391,9 @@ class TestCommentDetailView(APITestCase):
         self.post = PostFactory()
         self.comment = CommentFactory(post=self.post, author=self.user1)
         self.url = reverse('comment-detail', args=[self.post.id])
-        factory = APIRequestFactory()
-        self.request = factory.get('/')
-
     def test_return_data(self):
         response = self.client.get(self.url)
-        serializer = CommentSerializer(self.comment, context={'request': self.request})
+        serializer = CommentSerializer(self.comment, context={'request': response.wsgi_request})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
 
@@ -500,14 +505,11 @@ class TestCommentLikeListView(APITestCase):
         self.comment = CommentFactory(author=self.user1)
         self.client.force_login(self.user1)
         self.url = reverse('comment-like-list', args=[self.comment.id])
-        factory = APIRequestFactory()
-        self.request = factory.get('/')
-
     def test_list_all_comment_likes(self):
         all_commentlikes = []
         for c in range(3):
             all_commentlikes.append(CommentLikeFactory(comment=self.comment))
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        serializer = CommentLikeSerializer(all_commentlikes, many=True, context={'request': self.request})
+        serializer = CommentLikeSerializer(all_commentlikes, many=True, context={'request': response.wsgi_request})
         self.assertEqual(response.data['results'], serializer.data)

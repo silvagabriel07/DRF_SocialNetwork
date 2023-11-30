@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.views import Response
 from drf_spectacular.utils import extend_schema
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
@@ -16,6 +16,20 @@ class PostListCreateView(generics.ListCreateAPIView):
     filterset_class = PostFilter
             
 post_list_create_view = PostListCreateView.as_view()
+
+
+class PostFeedView(generics.ListAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        user = self.request.user
+        followed_users = user.following.all().values('followed')
+        qs = super().get_queryset()
+        return qs.filter(author__in=followed_users).order_by('-created_at')
+        
+post_feed_view = PostFeedView.as_view()
 
 
 class PostDetailView(generics.RetrieveAPIView):

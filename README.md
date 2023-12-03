@@ -1,7 +1,7 @@
 # DRF_SocialNetwork
 
 ## Description
-An API application of basic social network, developed with Django Rest Framework and TDD.
+An API of a basic social network, developed with Django Rest Framework and TDD.
 
 ## Getting Started
 - In terminal: `git clone https://github.com/silvagabriel07/EventEase`

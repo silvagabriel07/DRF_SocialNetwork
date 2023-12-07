@@ -19,8 +19,7 @@ class PostSerializer(serializers.ModelSerializer):
     
     @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_nested_tags(self, obj) -> List[str]:
-        ids = [tag.id for tag in obj.tags.all()]
-        tags = Tag.objects.filter(id__in=ids)
+        tags = obj.tags.all()
         serializer = TagSerializer(tags, many=True)
         return serializer.data
         

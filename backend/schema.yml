@@ -3,9 +3,63 @@ info:
   title: DRF Social Network
   version: 0.0.0
 paths:
-  /api/accounts/:
+  /api/accounts/api/token/:
+    post:
+      operationId: api_accounts_api_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/accounts/api/token/refresh/:
+    post:
+      operationId: api_accounts_api_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/accounts/profiles/:
     get:
-      operationId: api_accounts_list
+      operationId: api_accounts_profiles_list
       parameters:
       - name: limit
         required: false
@@ -37,9 +91,171 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedProfileList'
           description: ''
-  /api/accounts/follow/{id}/:
+  /api/accounts/profiles/{id}/:
+    get:
+      operationId: api_accounts_profiles_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /api/accounts/profiles/{id}/update/:
+    put:
+      operationId: api_accounts_profiles_update_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Profile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Profile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Profile'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    patch:
+      operationId: api_accounts_profiles_update_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfile'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /api/accounts/users/:
+    get:
+      operationId: api_accounts_users_list
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: username
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+  /api/accounts/users/{id}/:
+    get:
+      operationId: api_accounts_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/accounts/users/{id}/delete/:
+    delete:
+      operationId: api_accounts_users_delete_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/accounts/users/{id}/follow/:
     post:
-      operationId: api_accounts_follow_create
+      operationId: api_accounts_users_follow_create
       description: Endpoint for follow a specific user.
       summary: Follow a User
       parameters:
@@ -84,9 +300,9 @@ paths:
               schema:
                 detail: You are already following this user.
           description: ''
-  /api/accounts/followed-list/{id}/:
+  /api/accounts/users/{id}/followed/:
     get:
-      operationId: api_accounts_followed_list_list
+      operationId: api_accounts_users_followed_list
       parameters:
       - in: query
         name: created_at_after
@@ -133,9 +349,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedFollowedList'
           description: ''
-  /api/accounts/follower-list/{id}/:
+  /api/accounts/users/{id}/followers/:
     get:
-      operationId: api_accounts_follower_list_list
+      operationId: api_accounts_users_followers_list
       parameters:
       - in: query
         name: created_at_after
@@ -182,95 +398,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedFollowerList'
           description: ''
-  /api/accounts/profile-detail/{id}/:
-    get:
-      operationId: api_accounts_profile_detail_retrieve
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Profile'
-          description: ''
-  /api/accounts/profile-update/{id}/:
-    put:
-      operationId: api_accounts_profile_update_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Profile'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Profile'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Profile'
-        required: true
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Profile'
-          description: ''
-    patch:
-      operationId: api_accounts_profile_update_partial_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedProfile'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedProfile'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedProfile'
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Profile'
-          description: ''
-  /api/accounts/unfollow/{id}/:
+  /api/accounts/users/{id}/unfollow/:
     delete:
-      operationId: api_accounts_unfollow_destroy
+      operationId: api_accounts_users_unfollow_destroy
       description: Endpoint for unfollow a specific user.
       summary: Unfollow a User
       parameters:
@@ -303,113 +433,9 @@ paths:
               schema:
                 detail: You were not following this user.
           description: ''
-  /api/accounts/user-delete/{id}:
-    delete:
-      operationId: api_accounts_user_delete_destroy
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/accounts/user-detail/{id}/:
-    get:
-      operationId: api_accounts_user_detail_retrieve
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-  /api/accounts/user-list/:
-    get:
-      operationId: api_accounts_user_list_list
-      parameters:
-      - in: query
-        name: is_active
-        schema:
-          type: boolean
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
-        schema:
-          type: integer
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
-        schema:
-          type: integer
-      - in: query
-        name: username
-        schema:
-          type: string
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedUserList'
-          description: ''
-  /api/accounts/user-registration/:
-    post:
-      operationId: api_accounts_user_registration_create
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCreation'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/UserCreation'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/UserCreation'
-        required: true
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserCreation'
-          description: ''
-  /api/accounts/user-update/{id}:
+  /api/accounts/users/{id}/update/:
     put:
-      operationId: api_accounts_user_update_update
+      operationId: api_accounts_users_update_update
       parameters:
       - in: path
         name: id
@@ -441,7 +467,7 @@ paths:
                 $ref: '#/components/schemas/UserUpdate'
           description: ''
     patch:
-      operationId: api_accounts_user_update_partial_update
+      operationId: api_accounts_users_update_partial_update
       parameters:
       - in: path
         name: id
@@ -470,6 +496,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserUpdate'
+          description: ''
+  /api/accounts/users/register/:
+    post:
+      operationId: api_accounts_users_register_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreation'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreation'
           description: ''
   /api/posts/:
     get:
@@ -554,9 +608,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/Post'
           description: ''
-  /api/posts/{id}/comment/:
+  /api/posts/{id}/:
     get:
-      operationId: api_posts_comment_list
+      operationId: api_posts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+          description: ''
+  /api/posts/{id}/comments/:
+    get:
+      operationId: api_posts_comments_list
       parameters:
       - in: query
         name: content
@@ -608,7 +684,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedCommentList'
           description: ''
     post:
-      operationId: api_posts_comment_create
+      operationId: api_posts_comments_create
       parameters:
       - in: path
         name: id
@@ -639,9 +715,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Comment'
           description: ''
-  /api/posts/comment-delete/{id}/:
+  /api/posts/{id}/delete/:
     delete:
-      operationId: api_posts_comment_delete_destroy
+      operationId: api_posts_delete_destroy
       parameters:
       - in: path
         name: id
@@ -656,105 +732,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/posts/comment-detail/{id}/:
-    get:
-      operationId: api_posts_comment_detail_retrieve
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Comment'
-          description: ''
-  /api/posts/comment/like-list/{id}/:
-    get:
-      operationId: api_posts_comment_like_list_list
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
-        schema:
-          type: integer
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
-        schema:
-          type: integer
-      - in: query
-        name: search_user
-        schema:
-          type: string
-        description: Search by Profile Name or Username
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedCommentLikeList'
-          description: ''
-  /api/posts/dislike-comment/{id}/:
+  /api/posts/{id}/dislike/:
     delete:
-      operationId: api_posts_dislike_comment_destroy
-      description: Endpoint for disliking a specific comment.
-      summary: Dislike a Comment
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
-          description: ''
-        '404':
-          content:
-            application/json:
-              schema:
-                detail: The comment does not exist.
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                detail: You were not liking this comment.
-          description: ''
-  /api/posts/dislike-post/{id}/:
-    delete:
-      operationId: api_posts_dislike_post_destroy
+      operationId: api_posts_dislike_destroy
       description: Endpoint for disliking a specific post.
       summary: Dislike a Post
       parameters:
@@ -787,95 +767,9 @@ paths:
               schema:
                 detail: You were not liking this post.
           description: ''
-  /api/posts/like-comment/{id}/:
+  /api/posts/{id}/like/:
     post:
-      operationId: api_posts_like_comment_create
-      description: Endpoint for liking a specific comment.
-      summary: Like a Comment
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Message'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Message'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Message'
-        required: true
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
-          description: ''
-        '404':
-          content:
-            application/json:
-              schema:
-                detail: The comment does not exist.
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                detail: You are already liking this comment.
-          description: ''
-  /api/posts/like-list/{id}/:
-    get:
-      operationId: api_posts_like_list_list
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
-        schema:
-          type: integer
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
-        schema:
-          type: integer
-      - in: query
-        name: search_user
-        schema:
-          type: string
-        description: Search by Profile Name or Username
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedPostLikeList'
-          description: ''
-  /api/posts/like-post/{id}/:
-    post:
-      operationId: api_posts_like_post_create
+      operationId: api_posts_like_create
       description: Endpoint for liking a specific post.
       summary: Like a Post
       parameters:
@@ -920,32 +814,32 @@ paths:
               schema:
                 detail: You are already liking this post.
           description: ''
-  /api/posts/post-delete/{id}/:
-    delete:
-      operationId: api_posts_post_delete_destroy
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/posts/post-detail/{id}/:
+  /api/posts/{id}/like-list/:
     get:
-      operationId: api_posts_post_detail_retrieve
+      operationId: api_posts_like_list_list
       parameters:
       - in: path
         name: id
         schema:
           type: integer
         required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: search_user
+        schema:
+          type: string
+        description: Search by Profile Name or Username
       tags:
       - api
       security:
@@ -957,11 +851,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Post'
+                $ref: '#/components/schemas/PaginatedPostLikeList'
           description: ''
-  /api/posts/post-update/{id}/:
+  /api/posts/{id}/update/:
     put:
-      operationId: api_posts_post_update_update
+      operationId: api_posts_update_update
       parameters:
       - in: path
         name: id
@@ -992,7 +886,7 @@ paths:
                 $ref: '#/components/schemas/PostUpdate'
           description: ''
     patch:
-      operationId: api_posts_post_update_partial_update
+      operationId: api_posts_update_partial_update
       parameters:
       - in: path
         name: id
@@ -1022,9 +916,197 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostUpdate'
           description: ''
-  /api/posts/tag-list/:
+  /api/posts/comments/{id}/:
     get:
-      operationId: api_posts_tag_list_list
+      operationId: api_posts_comments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+  /api/posts/comments/{id}/delete/:
+    delete:
+      operationId: api_posts_comments_delete_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/posts/comments/{id}/dislike/:
+    delete:
+      operationId: api_posts_comments_dislike_destroy
+      description: Endpoint for disliking a specific comment.
+      summary: Dislike a Comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                detail: The comment does not exist.
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                detail: You were not liking this comment.
+          description: ''
+  /api/posts/comments/{id}/like/:
+    post:
+      operationId: api_posts_comments_like_create
+      description: Endpoint for liking a specific comment.
+      summary: Like a Comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Message'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                detail: The comment does not exist.
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                detail: You are already liking this comment.
+          description: ''
+  /api/posts/comments/{id}/like-list/:
+    get:
+      operationId: api_posts_comments_like_list_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: search_user
+        schema:
+          type: string
+        description: Search by Profile Name or Username
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCommentLikeList'
+          description: ''
+  /api/posts/feed/:
+    get:
+      operationId: api_posts_feed_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPostList'
+          description: ''
+  /api/posts/tags/:
+    get:
+      operationId: api_posts_tags_list
       parameters:
       - name: limit
         required: false
@@ -1055,59 +1137,150 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedTagList'
           description: ''
-  /api/token/:
-    post:
-      operationId: api_token_create
+  /api/schema/:
+    get:
+      operationId: api_schema_retrieve
       description: |-
-        Takes a set of user credentials and returns an access and refresh JSON web
-        token pair to prove the authentication of those credentials.
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
       tags:
       - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenObtainPair'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TokenObtainPair'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TokenObtainPair'
-        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
       responses:
         '200':
           content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenObtainPair'
-          description: ''
-  /api/token/refresh/:
-    post:
-      operationId: api_token_refresh_create
-      description: |-
-        Takes a refresh type JSON web token and returns an access type JSON web
-        token if the refresh token is valid.
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenRefresh'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TokenRefresh'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TokenRefresh'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenRefresh'
+                type: object
+                additionalProperties: {}
           description: ''
 components:
   schemas:

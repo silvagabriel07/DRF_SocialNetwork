@@ -1,7 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.dispatch import receiver
-from django.db.models.signals import pre_save, post_save
 from django.db.utils import IntegrityError
 from posts.models import PostLike, CommentLike
 from django.core.exceptions import ValidationError
@@ -27,19 +25,8 @@ class Follow(models.Model):
     def __str__(self):
         return f"{self.follower} follows {self.followed}"
 
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
-
     class Meta:
         unique_together = ('follower', 'followed')
-
-    
-@receiver(pre_save, sender=Follow)
-def check_self_following(sender, instance, **kwargs):
-    if instance.follower == instance.followed:
-       raise ValidationError("You can not follow yourself.")
-
 
 
 class Profile(models.Model):
@@ -53,22 +40,6 @@ class Profile(models.Model):
     def __str__(self) -> str:
         return f'{self.name} {self.id}'
     
-    # methods related to social network logic
-    # follow methods
-    def follow(self, user):
-        try:
-            Follow.objects.create(follower=self.user, followed=user)
-        except IntegrityError as err:
-            raise ValidationError("You are already following this user.")
-
-    def unfollow(self, user):
-        try:
-            follow = Follow.objects.get(follower=self.user, followed=user)
-            follow.delete()
-        except Follow.DoesNotExist as err:
-            raise ValidationError("You were not following this user.")
-
-    
     @property
     def total_followers(self) -> int:
         return self.user.followers.all().count()
@@ -77,44 +48,6 @@ class Profile(models.Model):
     def total_following(self) -> int:
         return self.user.following.all().count()
     
-    # post methods    
-    def like_post(self, post):
-        try:
-            PostLike.objects.create(user=self.user, post=post)
-        except IntegrityError as err:
-            raise ValidationError("You are already liking this post.")
-
-    def dislike_post(self, post):
-        try:
-            postlike = PostLike.objects.get(user=self.user, post=post)
-            postlike.delete()
-        except PostLike.DoesNotExist as err:
-            raise ValidationError("You were not liking this post.")
-        
     @property
     def total_posts(self) -> int:
         return self.user.posts.all().count()
-    
-    # comment methods
-    def like_comment(self, comment):
-        try:
-            CommentLike.objects.create(user=self.user, comment=comment)
-        except IntegrityError as err:
-            raise ValidationError("You have already liked this comment.")
-
-    def dislike_comment(self, comment):
-        try:
-            commentlike = CommentLike.objects.get(user=self.user, comment=comment)
-            commentlike.delete()
-        except CommentLike.DoesNotExist as err:
-            raise ValidationError("You did not like this comment.")
-
-
-@receiver(post_save, sender=User)
-def signup_create_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(
-            user=instance
-        )
-
-

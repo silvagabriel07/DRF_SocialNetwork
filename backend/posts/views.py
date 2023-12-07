@@ -90,8 +90,7 @@ class LikePostView(generics.CreateAPIView):
             return Response({'detail': 'The post does not exist.'}, status=status.HTTP_404_NOT_FOUND)
         if post.likes.filter(user=user).exists():
             return Response({'detail': 'You are already liking this post.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user.profile.like_post(post)
+        PostLike.objects.create(user=user, post=post)
         serializer = MessageSerializer({'message': 'You have successfully liked the post.'})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -117,8 +116,8 @@ class DislikePostView(generics.DestroyAPIView):
             return Response({'detail': 'The post does not exist.'}, status=status.HTTP_404_NOT_FOUND)
         if not post.likes.filter(user=user).exists():
             return Response({'detail': 'You were not liking this post.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user.profile.dislike_post(post)
+        postlike = PostLike.objects.get(post=post, user=user)
+        postlike.delete()
         serializer = MessageSerializer({'message': 'You have successfully disliked the post.'})
         return Response(serializer.data, status=status.HTTP_200_OK)
             
@@ -204,7 +203,7 @@ class LikeCommentView(generics.CreateAPIView):
         if comment.likes.filter(user=user).exists():
             return Response({'detail': 'You are already liking this comment.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user.profile.like_comment(comment)
+        CommentLike.objects.create(user=user, comment=comment)
         serializer = MessageSerializer({'message': 'You have successfully liked the comment.'})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -231,8 +230,9 @@ class DislikeCommentView(generics.DestroyAPIView):
             return Response({'detail': 'The comment does not exist.'}, status=status.HTTP_404_NOT_FOUND)
         if not comment.likes.filter(user=user).exists():
             return Response({'detail': 'You were not liking this comment.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user.profile.dislike_comment(comment)
+        
+        commentlike = CommentLike.objects.get(comment=comment, user=user)
+        commentlike.delete()
         serializer = MessageSerializer({'message': 'You have successfully disliked the comment.'})
         return Response(serializer.data, status=status.HTTP_200_OK)
             

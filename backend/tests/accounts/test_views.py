@@ -281,7 +281,7 @@ class TestFollowUserView(APITestCase):
             'detail': 'The user does not exist.'
         }
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.assertEqual(response.data, expected)
         self.user1.refresh_from_db()
         self.assertEqual(self.user1.following.all().count(), 0)
     
@@ -293,7 +293,7 @@ class TestFollowUserView(APITestCase):
             'detail': 'You are already following this user.'
         }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.assertEqual(response.data, expected)
         self.assertEqual(self.user1.following.all().count(), 1)
         
     def test_follow_yourself_fails(self):
@@ -303,7 +303,7 @@ class TestFollowUserView(APITestCase):
             'detail': 'You can not follow yourself.'
         }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['detail'][0], expected['detail'])
+        self.assertEqual(response.data, expected)
         self.assertEqual(self.user1.following.all().count(), 0)
 
 
@@ -333,7 +333,7 @@ class TestUnfollowUserView(APITestCase):
             'detail': 'The user does not exist.'
         }
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.assertEqual(response.data, expected)
         self.user1.refresh_from_db()
         self.assertEqual(self.user1.following.all().count(), 0)
     
@@ -344,7 +344,7 @@ class TestUnfollowUserView(APITestCase):
             'detail': 'You were not following this user.'
         }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(str(response.data['detail']), expected['detail'])
+        self.assertEqual(response.data, expected)
         self.assertEqual(self.user1.following.all().count(), 0)
         
 

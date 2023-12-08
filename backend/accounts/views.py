@@ -1,14 +1,14 @@
-from rest_framework import generics, permissions, status, serializers
+from rest_framework import generics, permissions, status
 from rest_framework.views import Response
 from accounts.models import User, Profile, Follow
 from accounts.serializers import (
     UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer,
     MessageSerializer, FollowerSerializer, FollowedSerializer
 )
-from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.filters import UserFilter, ProfileFilter, FollowerFilter, FollowedFilter
 from drf_spectacular.utils import extend_schema
+from accounts.permissions import IsUser
 # Create your views here.
 
 class UserDetailView(generics.RetrieveAPIView):
@@ -39,7 +39,7 @@ class UserRegistrationView(generics.CreateAPIView):
         return Response({
             'refresh': str(refresh),
             'access': str(refresh.access_token),
-            'user': UserCreationSerializer(user, context=self.get_serializer_context()).data
+            'user': self.get_serializer(user, context=self.get_serializer_context()).data
         }, status=status.HTTP_201_CREATED)
 
 user_registration_view = UserRegistrationView.as_view()
@@ -48,30 +48,15 @@ user_registration_view = UserRegistrationView.as_view()
 class UserUpdateView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserUpdateSerializer
+    permission_classes = [IsUser]
     
-    def update(self, request, *args, **kwargs):
-        user = self.get_object()
-
-        if not request.user == user:
-            error_response = {'request.user': 'You are not authorized to perform this action.'}
-            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-
-        return super().update(request, *args, **kwargs)
-
 user_update_view = UserUpdateView.as_view()    
 
 
 class UserDeleteView(generics.DestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    
-    def destroy(self, request, *args, **kwargs):
-        user = self.get_object()
-        
-        if not request.user == user:
-            error_response = {'request.user': 'You are not authorized to perform this action.'}
-            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-        return super().destroy(request, *args, **kwargs)
+    permission_classes = [IsUser]
 
 user_delete_view = UserDeleteView.as_view()    
 
@@ -94,14 +79,7 @@ profile_list_view = ProfileListView.as_view()
 class ProfileUpdateView(generics.UpdateAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    
-    def update(self, request, *args, **kwargs):
-        profile = self.get_object()
-
-        if not request.user == profile.user:
-            error_response = {'request.user': 'You are not authorized to perform this action.'}
-            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-        return super().update(request, *args, **kwargs)
+    permission_classes = [IsUser]
     
 profile_update_view = ProfileUpdateView.as_view()
 

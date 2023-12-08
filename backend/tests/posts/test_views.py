@@ -186,9 +186,9 @@ class TestPostUpdateView(APITestCase):
         }
         response = self.client.patch(self.url, data=data)
         expected = {
-            'request.user': 'You are not authorized to perform this action.'
+            'detail': 'You are not authorized to perform this action.'
         }
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data, expected)
         
     def test_put_update_post_with_more_than_30_tags_fails(self):
@@ -235,9 +235,9 @@ class TestPostDeleteView(APITestCase):
         self.client.force_login(self.another_user)
         response = self.client.delete(self.url)
         expected = {
-            'request.user': 'You are not authorized to perform this action.'
+            'detail': 'You are not authorized to perform this action.'
         }
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data, expected)
 
     def test_delete_post_successfully(self):
@@ -410,9 +410,9 @@ class TestCommentDeleteView(APITestCase):
         self.client.force_login(self.another_user)
         response = self.client.delete(self.url)
         expected = {
-            'request.user': 'You are not authorized to perform this action.'
+            'detail': 'You are not authorized to perform this action.'
         }
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data, expected)
 
     def test_delete_comment_successfully(self):

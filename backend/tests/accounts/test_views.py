@@ -83,7 +83,7 @@ class TestUserRegistrationView(APITestCase):
         }
         response = self.client.post(self.url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('This password is entirely numeric.', response.data['password'])        
+        self.assertIn('This password is entirely numeric.', response.data['password'])                
 
         
 class TestUserListView(APITestCase):
@@ -147,9 +147,9 @@ class TestUserUpdateView(APITestCase):
             'password': 'coolpass0@',
         }
         response = self.client.put(self.url, data=data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertFalse(User.objects.filter(username=data['username']).exists())
-        self.assertIn('You are not authorized to perform this action.', response.data['request.user'])
+        self.assertEqual('You are not authorized to perform this action.', response.data['detail'])
 
 
 class TestUserDeleteView(APITestCase):
@@ -163,13 +163,13 @@ class TestUserDeleteView(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(User.objects.all().count(), 0)
 
-    def test_delete_user_is_not_updated_if_is_not_the_user_from_the_request(self):
+    def test_delete_user_is_not_deleted_if_is_not_the_user_from_the_request(self):
             user2 = UserFactory()
             self.client.force_login(user2)
             response = self.client.delete(self.url)
-            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
             self.assertEqual(User.objects.all().count(), 2)
-            self.assertIn('You are not authorized to perform this action.', response.data['request.user'])
+            self.assertIn('You are not authorized to perform this action.', response.data['detail'])
         
 
 class TestProfileDetailView(APITestCase):
@@ -221,7 +221,18 @@ class TestProfileUpdateView(APITestCase):
         self.assertEqual(response.data['bio'], expected['bio'])
         self.assertEqual(response.data['picture'].replace(
             'http://testserver', ''), expected['picture'])
-        
+    
+    def test_put_profile_is_not_updated_if_the_profile_user_is_not_the_user_from_the_request(self):
+        user2 = UserFactory()
+        self.client.logout()
+        self.client.force_login(user2)
+        data = {
+            'name': 'user00099',
+        }
+        response = self.client.put(self.url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Profile.objects.filter(name=data['name']).exists())
+        self.assertEqual('You are not authorized to perform this action.', response.data['detail'])
 
     @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
     def test_patch_update_picture(self):
@@ -247,13 +258,8 @@ class TestProfileUpdateView(APITestCase):
             'bio': 'new bio sla.',
             'picture': SimpleUploadedFile("test_image.jpg", b"file_content", content_type="image/jpeg"),
         }
-        expected = {
-            'name': data['name'],
-            'bio': data['bio'],
-            'picture': data['picture'].name,
-        }
         response = self.client.patch(self.url, data=data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         
 
 class TestFollowUserView(APITestCase):

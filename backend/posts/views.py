@@ -8,6 +8,7 @@ from posts.serializers import (
 )
 from accounts.serializers import MessageSerializer
 from posts.filters import PostFilter, TagFilter, CommentFilter, PostLikeFilter, CommentLikeFilter
+from accounts.permissions import IsObjectAuthor
 # Create your views here.
 
 class PostListCreateView(generics.ListCreateAPIView):
@@ -42,30 +43,15 @@ post_detail_view = PostDetailView.as_view()
 class PostUpdateView(generics.UpdateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostUpdateSerializer
+    permission_classes = [IsObjectAuthor]
     
-    def update(self, request, *args, **kwargs):
-        post = self.get_object()
-        if not request.user == post.author:
-            error_response = {'request.user': 'You are not authorized to perform this action.'}
-            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-
-        return super().update(request, *args, **kwargs)
-
 post_update_view = PostUpdateView.as_view()
 
 
 class PostDeleteView(generics.DestroyAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-        
-    def destroy(self, request, *args, **kwargs):
-        post = self.get_object()
-        
-        if not request.user == post.author:
-            error_response = {'request.user': 'You are not authorized to perform this action.'}
-            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-        
-        return super().destroy(request, *args, **kwargs)
+    permission_classes = [IsObjectAuthor]
 
 post_delete_view = PostDeleteView.as_view()
 
@@ -169,15 +155,7 @@ comment_detail_view = CommentDetailView.as_view()
 class CommentDeleteView(generics.DestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-        
-    def destroy(self, request, *args, **kwargs):
-        comment = self.get_object()
-        
-        if not request.user == comment.author:
-            error_response = {'request.user': 'You are not authorized to perform this action.'}
-            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-        
-        return super().destroy(request, *args, **kwargs)
+    permission_classes = [IsObjectAuthor]
 
 comment_delete_view = CommentDeleteView.as_view()
 

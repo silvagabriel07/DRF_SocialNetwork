@@ -2,11 +2,7 @@ from rest_framework import generics, status, permissions
 from rest_framework.views import Response
 from drf_spectacular.utils import extend_schema
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
-from posts.serializers import (
-    PostSerializer, PostUpdateSerializer, TagSerializer,
-    CommentSerializer, CommentLikeSerializer, PostLikeSerializer,
-    PostDeleteSerializer
-)
+from posts import serializers
 from accounts.serializers import MessageSerializer
 from posts.filters import PostFilter, TagFilter, CommentFilter, PostLikeFilter, CommentLikeFilter
 from accounts.permissions import IsObjectAuthor
@@ -14,7 +10,7 @@ from accounts.permissions import IsObjectAuthor
 
 class PostListCreateView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
+    serializer_class = serializers.PostSerializer
     filterset_class = PostFilter
             
 post_list_create_view = PostListCreateView.as_view()
@@ -22,7 +18,7 @@ post_list_create_view = PostListCreateView.as_view()
 
 class PostFeedView(generics.ListAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
+    serializer_class = serializers.PostSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
@@ -36,14 +32,14 @@ post_feed_view = PostFeedView.as_view()
 
 class PostDetailView(generics.RetrieveAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
+    serializer_class = serializers.PostSerializer
     
 post_detail_view = PostDetailView.as_view()
 
 
 class PostUpdateView(generics.UpdateAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostUpdateSerializer
+    serializer_class = serializers.PostUpdateSerializer
     permission_classes = [IsObjectAuthor]
     
 post_update_view = PostUpdateView.as_view()
@@ -51,7 +47,7 @@ post_update_view = PostUpdateView.as_view()
 
 class PostDeleteView(generics.DestroyAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostDeleteSerializer
+    serializer_class = serializers.PostDeleteSerializer
     permission_classes = [IsObjectAuthor]
 
 post_delete_view = PostDeleteView.as_view()
@@ -113,7 +109,7 @@ dislike_post_view = DislikePostView.as_view()
 
 class TagListView(generics.ListAPIView):
     queryset = Tag.objects.all()
-    serializer_class = TagSerializer
+    serializer_class = serializers.TagSerializer
     filterset_class = TagFilter
 
 tag_list_view = TagListView.as_view()
@@ -121,7 +117,7 @@ tag_list_view = TagListView.as_view()
 
 class CommentListCreateView(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
+    serializer_class = serializers.CommentSerializer
     filterset_class = CommentFilter
     
     def get_queryset(self):
@@ -142,7 +138,7 @@ comment_list_create_view = CommentListCreateView.as_view()
 
 class CommentDetailView(generics.RetrieveAPIView):
     queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
+    serializer_class = serializers.CommentSerializer
     
     def get_queryset(self):
         comment_id = self.kwargs['pk']
@@ -155,7 +151,7 @@ comment_detail_view = CommentDetailView.as_view()
 
 class CommentDeleteView(generics.DestroyAPIView):
     queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
+    serializer_class = serializers.CommentSerializer
     permission_classes = [IsObjectAuthor]
 
 comment_delete_view = CommentDeleteView.as_view()
@@ -220,7 +216,7 @@ dislike_comment_view = DislikeCommentView.as_view()
 
 class CommentLikeListView(generics.ListAPIView):
     queryset = CommentLike.objects.all()
-    serializer_class = CommentLikeSerializer
+    serializer_class = serializers.CommentLikeSerializer
     filterset_class = CommentLikeFilter
     
     def get_queryset(self):
@@ -233,7 +229,7 @@ comment_like_list_view = CommentLikeListView.as_view()
 
 class PostLikeListView(generics.ListAPIView):
     queryset = PostLike.objects.all()
-    serializer_class = PostLikeSerializer
+    serializer_class = serializers.PostLikeSerializer
     filterset_class = PostLikeFilter
     
     def get_queryset(self):

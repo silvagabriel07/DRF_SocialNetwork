@@ -1,9 +1,5 @@
 from django.db import models
 from django.conf import settings
-from django.core.exceptions import ValidationError
-from django.db.models.signals import m2m_changed
-from django.dispatch import receiver
-from django.utils import timezone
 
 
 User = settings.AUTH_USER_MODEL
@@ -35,13 +31,6 @@ class Post(models.Model):
     def total_tags(self) -> int:
         return self.tags.count()        
     
-
-@receiver(m2m_changed, sender=Post.tags.through)
-def limit_tags(sender, instance, action, pk_set, **kwargs):
-    if action == "pre_add":
-        if instance.tags.count() + len(pk_set) > 30:
-            raise ValidationError("A post can't have more than 30 tags.")
-
 
 class PostLike(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_liked')

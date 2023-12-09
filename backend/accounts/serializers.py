@@ -25,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer, UserValidationMixin):
         }
     
 
-class UserCreationSerializer(serializers.ModelSerializer, UserValidationMixin):
+class UserCreationSerializer(UserValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'password', 'is_active']
@@ -44,7 +44,7 @@ class UserCreationSerializer(serializers.ModelSerializer, UserValidationMixin):
         return user
     
 
-class UserUpdateSerializer(serializers.ModelSerializer, UserValidationMixin):
+class UserUpdateSerializer(UserValidationMixin, serializers.ModelSerializer):
     old_password = serializers.CharField(write_only=True)
     
     class Meta:

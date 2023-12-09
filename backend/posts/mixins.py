@@ -29,3 +29,4 @@ class PostValidationMixin:
             self.validate_editable_time(self.instance)
             self.instance.edited = True
         return super().validate(attrs)
+

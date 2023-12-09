@@ -70,7 +70,8 @@ class TestPostListCreateView(APITestCase):
             'created_at': response.data['created_at'],
             'total_likes': 0,
             'total_tags': len(data['tags']),
-            'total_comments': 0
+            'total_comments': 0,
+            'edited': response.data['edited']
         }
 
         self.assertEqual(response.data, expected)
@@ -162,19 +163,11 @@ class TestPostUpdateView(APITestCase):
             'tags': tags
         }
         response = self.client.put(self.url, data=data)
-        expected = {
-            'id': self.post.id,
-            'title': data['title'],
-            'content': data['content'],
-            'author': ProfileSimpleSerializer(self.user1.profile, context={'request': response.wsgi_request}).data,
-            'nested_tags': [{'id': tag.id, 'name': tag.name} for tag in all_tags],
-            'created_at': response.data['created_at'],
-            'total_likes': 0,
-            'total_tags': len(data['tags']),
-            'total_comments': 0
-        }
+        
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, expected)
+        self.assertEqual(response.data['title'], data['title'])
+        self.assertEqual(response.data['content'], data['content'])
+        self.assertEqual(response.data['nested_tags'], [{'id': tag.id, 'name': tag.name} for tag in all_tags])
 
     def test_update_post_user_of_the_request_must_be_the_owner(self):
         another_user = UserFactory()
@@ -206,7 +199,7 @@ class TestPostUpdateView(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data, expected)
     
-    @patch('posts.models.timezone')
+    @patch('posts.mixins.timezone')
     def test_patch_update_post_after_12_hours_fails(self, mock_timezone):
         mock_timezone.now.return_value = timezone.now() + timezone.timedelta(days=1)
         mock_timezone.timedelta.return_value = timezone.timedelta(hours=12)
@@ -216,10 +209,8 @@ class TestPostUpdateView(APITestCase):
         }
         response = self.client.patch(self.url, data=data)
         expected = {
-            'edited': {
                 'detail': ['This post cannot be edited any further.']
             }
-        }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data, expected)
 

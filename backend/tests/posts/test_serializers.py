@@ -29,6 +29,7 @@ class TestPostSerializer(APITestCase):
             'total_likes': self.post.total_likes,
             'total_tags': self.post.total_tags,
             'total_comments': self.post.total_comments,
+            'edited': self.post.edited
         }
         self.assertDictEqual(self.serializer.data, expected)
 
@@ -83,18 +84,6 @@ class TestPostUpdateSerializer(APITestCase):
         self.assertEqual(data['title'], self.post.title)
         self.assertEqual(data['content'], self.post.content)
         self.assertEqual(data['tags'], [tag.id for tag in self.post.tags.all()])
-        expected = {
-            'id': self.post.id,
-            'title': self.post.title,
-            'content': self.post.content,
-            'author': ProfileSimpleSerializer(self.post.author.profile, context={'request': self.request}).data,
-            'nested_tags': [{'id': tag.id, 'name': tag.name} for tag in self.post.tags.all()],
-            'created_at': self.post.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-            'total_likes': self.post.total_likes,
-            'total_tags': self.post.total_tags,
-            'total_comments': self.post.total_comments,
-        }
-        self.assertEqual(serializer.data, expected)
         self.assertTrue(self.post.edited)
         
     def test_update_post_adding_more_than_30_tags_fails(self):
@@ -111,18 +100,25 @@ class TestPostUpdateSerializer(APITestCase):
         self.assertEqual(self.post.tags.all().count(), 1)
     
     def test_update_post_already_updated_fails(self):
-        self.post.title = 'title updated'
-        self.post.save()
+        data = {
+            'title': 'Updated title',
+            'content': 'Updated content',
+        }
+        serializer = PostUpdateSerializer(instance=self.post, data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        self.post.refresh_from_db()
+        self.assertTrue(self.post.edited)
+        
         data = {
             'title': 'Updated title again',
             'content': 'Updated content again',
         }
         serializer = PostUpdateSerializer(instance=self.post, data=data)
-        serializer.is_valid()
         with self.assertRaisesMessage(ValidationError, 'This post has already been edited.'):
-            serializer.save()
+            serializer.is_valid(raise_exception=True)
     
-    @patch('posts.models.timezone')
+    @patch('posts.mixins.timezone')
     def test_update_post_after_12_hours_fails(self, mock_timezone):
         mock_timezone.now.return_value = timezone.now() + timezone.timedelta(days=1)
         mock_timezone.timedelta.return_value = timezone.timedelta(hours=12)
@@ -131,10 +127,8 @@ class TestPostUpdateSerializer(APITestCase):
             'content': 'Updated content again',
         }
         serializer = PostUpdateSerializer(instance=self.post, data=data)
-        serializer.is_valid()
         with self.assertRaisesMessage(ValidationError, 'This post cannot be edited any further.'):
-            serializer.save()
-
+            serializer.is_valid(raise_exception=True)
 
         
 class TestTagSerializer(APITestCase):

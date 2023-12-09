@@ -5,6 +5,7 @@ from posts.models import Post, Tag, Comment, CommentLike, PostLike
 from posts.serializers import (
     PostSerializer, PostUpdateSerializer, TagSerializer,
     CommentSerializer, CommentLikeSerializer, PostLikeSerializer,
+    PostDeleteSerializer
 )
 from accounts.serializers import MessageSerializer
 from posts.filters import PostFilter, TagFilter, CommentFilter, PostLikeFilter, CommentLikeFilter
@@ -50,7 +51,7 @@ post_update_view = PostUpdateView.as_view()
 
 class PostDeleteView(generics.DestroyAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
+    serializer_class = PostDeleteSerializer
     permission_classes = [IsObjectAuthor]
 
 post_delete_view = PostDeleteView.as_view()

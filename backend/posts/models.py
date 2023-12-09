@@ -19,17 +19,7 @@ class Post(models.Model):
     tags = models.ManyToManyField(Tag, related_name='posts')
     created_at = models.DateTimeField(auto_now_add=True)
     edited = models.BooleanField(default=False)
-    
-    def save(self, *args, **kwargs) -> None:
-        if self.edited is True:
-            raise ValidationError('This post has already been edited.')
-        elif self.created_at:
-            if timezone.now() > self.created_at + timezone.timedelta(hours=12):
-                raise ValidationError("This post cannot be edited any further.")
-            else:
-                self.edited = True
-        super(Post, self).save(*args, **kwargs)
-    
+        
     def __str__(self) -> str:
         return self.title
 

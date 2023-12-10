@@ -1,9 +1,8 @@
+from typing import List
 from rest_framework import serializers
 from posts.models import Post, Tag, Comment, CommentLike, PostLike
 from accounts.serializers import ProfileSimpleSerializer
-from drf_spectacular.utils import extend_schema_field
-from typing import List
-from posts.mixins import PostValidationMixin
+from posts.mixins import PostValidationMixin, PostSerializerMixin
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,18 +10,7 @@ class TagSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class PostSerializer(PostValidationMixin, serializers.ModelSerializer):
-    # 'nested_tags' field is just to be see the tags and return them serialized 
-    # 'tags' field expects a list of tag ids, and it's what we use as 'input'
-    nested_tags = serializers.SerializerMethodField(read_only=True)
-    author = ProfileSimpleSerializer(source='author.profile', required=False)
-    
-    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
-    def get_nested_tags(self, obj) -> List[str]:
-        tags = obj.tags.all()
-        serializer = TagSerializer(tags, many=True)
-        return serializer.data
-        
+class PostSerializer(PostValidationMixin, PostSerializerMixin, serializers.ModelSerializer):        
     class Meta:
         model = Post
         fields = [
@@ -47,18 +35,7 @@ class PostSerializer(PostValidationMixin, serializers.ModelSerializer):
         return post
     
 
-class PostUpdateSerializer(PostValidationMixin, serializers.ModelSerializer):
-    # 'nested_tags' field is just to be see the tags and return them serialized 
-    # 'tags' field expects a list of tag ids, and it's what we use as 'input'
-    nested_tags = serializers.SerializerMethodField(read_only=True)
-    author = ProfileSimpleSerializer(source='author.profile', required=False)
-    
-    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
-    def get_nested_tags(self, obj) -> List[str]:
-        tags = obj.tags.all()
-        serializer = TagSerializer(tags, many=True)
-        return serializer.data
-    
+class PostUpdateSerializer(PostValidationMixin, PostSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [

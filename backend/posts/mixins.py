@@ -1,5 +1,8 @@
+from accounts.serializers import ProfileSimpleSerializer
 from rest_framework import serializers
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema_field
+from typing import List
 
 
 class PostValidationMixin:
@@ -30,3 +33,18 @@ class PostValidationMixin:
             self.instance.edited = True
         return super().validate(attrs)
 
+
+class PostSerializerMixin(serializers.ModelSerializer):
+    # 'nested_tags' field is just to be see the tags and return them serialized 
+    # 'tags' field expects a list of tag ids, and it's what we use as 'input'
+    author = ProfileSimpleSerializer(source='author.profile', required=False)
+    nested_tags = serializers.SerializerMethodField(read_only=True)
+    
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
+    def get_nested_tags(self, obj) -> List[str]:
+        from posts.serializers import TagSerializer
+        tags = obj.tags.all()
+        serializer = TagSerializer(tags, many=True)
+        return serializer.data
+    
+    

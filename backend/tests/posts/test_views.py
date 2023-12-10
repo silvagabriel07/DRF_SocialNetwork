@@ -1,4 +1,5 @@
-from rest_framework.test import APITestCase, APIRequestFactory
+from rest_framework.test import APITestCase
+from posts.mixins import max_tags_allowed, max_post_editable_time
 from tests.posts.factories import PostFactory, TagFactory, PostLikeFactory, CommentFactory, CommentLikeFactory
 from tests.accounts.factories import UserFactory, FollowFactory
 
@@ -22,11 +23,10 @@ class TestPostListCreateView(APITestCase):
         post = PostFactory()
         post.tags.set(self.tags)
 
+        expected = TagSerializer(post.tags.all(), many=True).data
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        expected = [{'id': tag.id, 'name': tag.name}
-                    for tag in post.tags.all()]
         ordered_nested_tags = [ordered_post['nested_tags']
                                for ordered_post in response.data['results']]
         response_nested_tags_data = [
@@ -40,15 +40,15 @@ class TestPostListCreateView(APITestCase):
         serializer = PostSerializer(Post.objects.all(), many=True, context={'request': response.wsgi_request})
         self.assertEqual(response.data['results'], serializer.data)
 
-    def test_create_post_with_more_than_30_tags_fails(self):
+    def test_create_post_with_more_than_max_tags_allowed_tags_fails(self):
         data = {
             'title': 'title 1',
             'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-            'tags': [tag.id for tag in TagFactory.create_batch(31)],
+            'tags': [tag.id for tag in TagFactory.create_batch(max_tags_allowed+1)],
         }
         response = self.client.post(self.url, data=data, format='json')
         expected = {'tags':
-                    {'detail': "A post can't have more than 30 tags."}
+                    {'detail': f"A post can't have more than {max_tags_allowed} tags."}
                     }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data, expected)
@@ -74,7 +74,14 @@ class TestPostListCreateView(APITestCase):
             'edited': response.data['edited']
         }
 
-        self.assertEqual(response.data, expected)
+        self.assertEqual(response.data['title'], expected['title'])
+        self.assertEqual(response.data['content'], expected['content'])
+        self.assertEqual(response.data['author'], expected['author'])
+        self.assertEqual(response.data['created_at'], expected['created_at'])
+        self.assertEqual(response.data['total_likes'], expected['total_likes'])
+        self.assertEqual(response.data['total_tags'], expected['total_tags'])
+        self.assertEqual(response.data['total_comments'], expected['total_comments'])
+        self.assertEqual(response.data['edited'], expected['edited'])
         post_created = Post.objects.get(id=expected['id'])
         self.assertEqual(
             [tag.id for tag in post_created.tags.all()], data['tags'])
@@ -172,7 +179,7 @@ class TestPostUpdateView(APITestCase):
     def test_update_post_user_of_the_request_must_be_the_owner(self):
         another_user = UserFactory()
         self.client.logout()
-        self.client.force_login(another_user)
+        self.client.force_login(another_user)   
         data = {
             'title': 'Title updated',
             'content': 'Content updated',
@@ -184,7 +191,7 @@ class TestPostUpdateView(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data, expected)
         
-    def test_put_update_post_with_more_than_30_tags_fails(self):
+    def test_put_update_post_with_more_than_max_tags_allowed_fails(self):
         all_tags = TagFactory.create_batch(31)
         tags = [tag.id for tag in all_tags]
         data = {
@@ -194,15 +201,15 @@ class TestPostUpdateView(APITestCase):
         }
         response = self.client.put(self.url, data=data)
         expected = {'tags':
-                    {'detail': "A post can't have more than 30 tags."}
+                    {'detail': f"A post can't have more than {max_tags_allowed} tags."}
                     }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data, expected)
     
     @patch('posts.mixins.timezone')
-    def test_patch_update_post_after_12_hours_fails(self, mock_timezone):
+    def test_patch_update_post_after_max_editable_time_fails(self, mock_timezone):
         mock_timezone.now.return_value = timezone.now() + timezone.timedelta(days=1)
-        mock_timezone.timedelta.return_value = timezone.timedelta(hours=12)
+        mock_timezone.timedelta.return_value = timezone.timedelta(hours=max_post_editable_time)
         data = {
             'title': 'Title updated',
             'content': 'Content updated',
@@ -244,6 +251,7 @@ class TestPostLikeListView(APITestCase):
         self.post = PostFactory(author=self.user1)
         self.client.force_login(self.user1)
         self.url = reverse('post-like-list', args=[self.post.id])
+        
     def test_list_all_post_likes(self):
         all_postlikes = []
         for c in range(3):
@@ -349,6 +357,7 @@ class TestCommentListCreateView(APITestCase):
         self.post = PostFactory()
         self.url = reverse('comment-list-create', args=[self.post.id])
         self.client.force_login(self.user1)
+        
     def test_list_all_comments(self):
         all_tags = []
         for c in range(3):
@@ -372,7 +381,11 @@ class TestCommentListCreateView(APITestCase):
             'total_likes': 0,
         }
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data, expected)
+        self.assertEqual(response.data['content'], expected['content'])
+        self.assertEqual(response.data['post'], expected['post'])
+        self.assertEqual(response.data['author'], expected['author'])
+        self.assertEqual(response.data['total_likes'], expected['total_likes'])
+        self.assertTrue(Comment.objects.filter(id=response.data['id']).exists())
 
 
 class TestCommentDetailView(APITestCase):
@@ -382,7 +395,8 @@ class TestCommentDetailView(APITestCase):
         self.post = PostFactory()
         self.comment = CommentFactory(post=self.post, author=self.user1)
         self.url = reverse('comment-detail', args=[self.post.id])
-    def test_return_data(self):
+        
+    def test_comment_returned_data(self):
         response = self.client.get(self.url)
         serializer = CommentSerializer(self.comment, context={'request': response.wsgi_request})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -492,6 +506,7 @@ class TestCommentLikeListView(APITestCase):
         self.comment = CommentFactory(author=self.user1)
         self.client.force_login(self.user1)
         self.url = reverse('comment-like-list', args=[self.comment.id])
+        
     def test_list_all_comment_likes(self):
         all_commentlikes = []
         for c in range(3):

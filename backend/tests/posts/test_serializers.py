@@ -5,7 +5,7 @@ from tests.accounts.factories import UserFactory
 from rest_framework.exceptions import ValidationError
 from unittest.mock import patch
 from django.utils import timezone
-from posts.mixins import max_tags_allowed
+from posts.mixins import max_tags_allowed, max_post_editable_time
 
 class TestPostSerializer(APITestCase):    
     def setUp(self) -> None:
@@ -129,9 +129,9 @@ class TestPostUpdateSerializer(APITestCase):
             serializer.is_valid(raise_exception=True)
     
     @patch('posts.mixins.timezone')
-    def test_update_post_after_12_hours_fails(self, mock_timezone):
+    def test_update_post_after_max_editable_time_fails(self, mock_timezone):
         mock_timezone.now.return_value = timezone.now() + timezone.timedelta(days=1)
-        mock_timezone.timedelta.return_value = timezone.timedelta(hours=12)
+        mock_timezone.timedelta.return_value = timezone.timedelta(hours=max_post_editable_time)
         data = {
             'title': 'Updated title again',
             'content': 'Updated content again',

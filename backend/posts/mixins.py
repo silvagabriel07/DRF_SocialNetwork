@@ -6,6 +6,7 @@ from typing import List
 
 
 max_tags_allowed = 30
+max_post_editable_time = 12
 
 class PostValidationMixin:
     def validate_tags(self, value):
@@ -23,7 +24,7 @@ class PostValidationMixin:
             raise serializers.ValidationError({'detail': 'This post has already been edited.'})
 
     def validate_editable_time(self, instance):
-        max_editable_time = timezone.timedelta(hours=12)
+        max_editable_time = timezone.timedelta(hours=max_post_editable_time)
         if timezone.now() > instance.created_at + max_editable_time:
             raise serializers.ValidationError({"detail": "This post cannot be edited any further."})
 

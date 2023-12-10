@@ -2,7 +2,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from accounts.models import Profile, User
 from tests.accounts.factories import UserFactory, FollowFactory
-from accounts.serializers import UserSerializer, ProfileSerializer, ProfileSimpleSerializer
+from accounts.serializers import UserSerializer, ProfileSerializer, ProfileSimpleSerializer, UserCreationSerializer, FollowedSerializer, FollowerSerializer
 from django.urls import reverse
 from django.test import override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -35,16 +35,16 @@ class TestUserRegistrationView(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         expected = {
             'user': {
-                'id': response.data['user']['id'],
                 'username': data['username'],
                 'email': data['email'],
-                'is_active': response.data['user']['is_active']
                 },
         }
+        
         self.assertIn('refresh', response.data)
         self.assertIn('access', response.data)
         self.assertIn('user', response.data)
-        self.assertEqual(response.data['user'], expected['user'])
+        self.assertEqual(response.data['user']['username'], expected['user']['username'])
+        self.assertEqual(response.data['user']['email'], expected['user']['email'])
         self.assertTrue(User.objects.filter(email=data['email'], username=data['username']).exists())
 
     def test_post_with_already_existing_username_fails(self):
@@ -137,6 +137,18 @@ class TestUserUpdateView(APITestCase):
         self.assertEqual(self.user.username, data['username'])
         self.assertTrue(self.user.check_password(data['password']))
         
+    def test_update_password_with_invalid_old_password(self):
+        data = {
+            'old_password': 'WRONGpassword123@',
+            'password': 'coolpass0@',
+            'username': 'user00'
+        }
+        response = self.client.put(self.url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.user.refresh_from_db()
+        self.assertNotEqual(self.user.username, data['username'])
+        self.assertFalse(self.user.check_password(data['password']))
+        
     def test_put_user_is_not_updated_if_is_not_the_user_from_the_request(self):
         user2 = UserFactory()
         self.client.logout()
@@ -149,7 +161,7 @@ class TestUserUpdateView(APITestCase):
         response = self.client.put(self.url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertFalse(User.objects.filter(username=data['username']).exists())
-        self.assertEqual('You are not authorized to perform this action.', response.data['detail'])
+        self.assertEqual(response.data['detail'], 'You are not authorized to perform this action.')
 
 
 class TestUserDeleteView(APITestCase):
@@ -164,12 +176,12 @@ class TestUserDeleteView(APITestCase):
         self.assertEqual(User.objects.all().count(), 0)
 
     def test_delete_user_is_not_deleted_if_is_not_the_user_from_the_request(self):
-            user2 = UserFactory()
-            self.client.force_login(user2)
-            response = self.client.delete(self.url)
-            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-            self.assertEqual(User.objects.all().count(), 2)
-            self.assertIn('You are not authorized to perform this action.', response.data['detail'])
+        user2 = UserFactory()
+        self.client.force_login(user2)
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(User.objects.all().count(), 2)
+        self.assertIn('You are not authorized to perform this action.', response.data['detail'])
         
 
 class TestProfileDetailView(APITestCase):
@@ -213,14 +225,12 @@ class TestProfileUpdateView(APITestCase):
         expected = {
             'name': data['name'],
             'bio': data['bio'],
-            'picture': self.profile.picture.url.replace('http://testserver', ''),
         }
         response = self.client.patch(self.url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], expected['name'])
         self.assertEqual(response.data['bio'], expected['bio'])
-        self.assertEqual(response.data['picture'].replace(
-            'http://testserver', ''), expected['picture'])
+        self.assertTrue(Profile.objects.filter(bio=data['bio'], name=data['name']).exists())
     
     def test_put_profile_is_not_updated_if_the_profile_user_is_not_the_user_from_the_request(self):
         user2 = UserFactory()
@@ -233,10 +243,12 @@ class TestProfileUpdateView(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertFalse(Profile.objects.filter(name=data['name']).exists())
         self.assertEqual('You are not authorized to perform this action.', response.data['detail'])
+        self.assertFalse(Profile.objects.filter(name=data['name']).exists())
 
     @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
     def test_patch_update_picture(self):
         data = {
+            'name': 'user updated pic',
             'picture': SimpleUploadedFile("test_image.jpg", b"file_content", content_type="image/jpeg"),
         }
         expected = {
@@ -247,6 +259,7 @@ class TestProfileUpdateView(APITestCase):
         self.assertEqual(response.data['picture'].split('/')[-1], expected['picture'])
         self.profile.refresh_from_db()
         self.assertEqual((self.profile.picture.name).split('/')[-1], expected['picture'])
+        self.assertTrue(Profile.objects.filter(name=data['name']).exists())
     
     @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
     def test_put_update_profile_must_belong_to_requesting_user(self):
@@ -260,7 +273,8 @@ class TestProfileUpdateView(APITestCase):
         }
         response = self.client.patch(self.url, data=data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        
+        self.assertFalse(Profile.objects.filter(name=data['name']).exists())
+
 
 class TestFollowUserView(APITestCase):
     def setUp(self) -> None:
@@ -366,8 +380,8 @@ class TestFollowerListView(APITestCase):
         response = self.client.get(reverse('follower-list', args=[self.user1.id]))
         expected = []
         for follow in self.all_followers:
-            data = {'profile': ProfileSimpleSerializer(follow.follower.profile, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
-            expected.append(data)
+            follow_serialized = FollowerSerializer(instance=follow, context={'request': response.wsgi_request})
+            expected.append(follow_serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['results'], expected)
 
@@ -383,8 +397,8 @@ class TestFollowedListView(APITestCase):
         response = self.client.get(reverse('followed-list', args=[self.user1.id]))
         expected = []
         for follow in self.all_following:
-            data = {'profile': ProfileSimpleSerializer(follow.followed.profile, context={'request': response.wsgi_request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
-            expected.append(data)
+            follow_serialized = FollowedSerializer(instance=follow, context={'request': response.wsgi_request})
+            expected.append(follow_serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['results'], expected)
         

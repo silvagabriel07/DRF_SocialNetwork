@@ -1,12 +1,10 @@
 from rest_framework import serializers
 from accounts.models import User, Profile, Follow
-import django.contrib.auth.password_validation as validators
-from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import check_password
 from accounts.mixins import UserValidationMixin
 
 
-class UserSerializer(serializers.ModelSerializer, UserValidationMixin):
+class UserSerializer(serializers.ModelSerializer):
     profile_detail_url = serializers.HyperlinkedRelatedField(
         source='profile',
         many=False,

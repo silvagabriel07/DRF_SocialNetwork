@@ -1,10 +1,6 @@
 from rest_framework.test import APITestCase, APITransactionTestCase
-from posts.models import Post, Tag
-from tests.accounts.factories import UserFactory
 from tests.posts.factories import PostFactory, PostLikeFactory, TagFactory, CommentFactory, CommentLikeFactory
 from django.core.exceptions import ValidationError
-from unittest.mock import patch
-from django.utils import timezone
 
 
 class TestPost(APITransactionTestCase):

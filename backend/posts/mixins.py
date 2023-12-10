@@ -5,9 +5,10 @@ from drf_spectacular.utils import extend_schema_field
 from typing import List
 
 
+max_tags_allowed = 30
+
 class PostValidationMixin:
     def validate_tags(self, value):
-        max_tags_allowed = 30
         if self.instance:
             current_tags_count = self.instance.tags.all().count()
             if current_tags_count + len(value) > max_tags_allowed:

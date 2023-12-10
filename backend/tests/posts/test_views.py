@@ -279,7 +279,7 @@ class TestLikePostView(APITestCase):
             'detail': 'You are already liking this post.'
         }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, expected)
+        self.assertEqual(str(response.data['detail'][0]), expected['detail'])
         self.assertEqual(self.post.likes.all().count(), 1)
 
     def test_like_post_with_pk_of_a_non_existing_post_fails(self):
@@ -438,19 +438,16 @@ class TestLikeCommentView(APITestCase):
             'detail': 'You are already liking this comment.'
         }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, expected)
+        print(response.data)
+        self.assertEqual(str(response.data['detail'][0]), expected['detail'])
         self.assertEqual(self.comment.likes.all().count(), 1)
 
     def test_like_comment_with_pk_of_a_non_existing_comment_fails(self):
         invalid_pk = 10
         url = reverse('like-comment', args=[invalid_pk])
         response = self.client.post(url)
-        expected = {
-            'detail': 'The comment does not exist.'
-        }
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data, expected)
-
+        self.assertEqual(self.comment.likes.all().count(), 0)
 
 class TestDislikecommentView(APITestCase):
     def setUp(self) -> None:

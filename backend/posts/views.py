@@ -63,19 +63,22 @@ post_delete_view = PostDeleteView.as_view()
         },
 )
 class LikePostView(generics.CreateAPIView):
-    serializer_class = MessageSerializer
+    queryset = PostLike.objects.all()
+    serializer_class = serializers.PostLikeSerializer
     
-    def post(self, request, pk):
-        user = request.user
-        try:
-            post = Post.objects.get(pk=pk)
-        except Post.DoesNotExist:
+    def create(self, request, *args, **kwargs):
+        post_id = self.kwargs['pk']
+        if not Post.objects.filter(id=post_id).exists():
             return Response({'detail': 'The post does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-        if post.likes.filter(user=user).exists():
-            return Response({'detail': 'You are already liking this post.'}, status=status.HTTP_400_BAD_REQUEST)
-        PostLike.objects.create(user=user, post=post)
-        serializer = MessageSerializer({'message': 'You have successfully liked the post.'})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        request.data['post'] = post_id
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        message = MessageSerializer({'message': 'You have successfully liked the post.'})
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(message.data, status=status.HTTP_201_CREATED, headers=headers)
 
 like_post_view = LikePostView.as_view()
 
@@ -167,20 +170,23 @@ comment_delete_view = CommentDeleteView.as_view()
         },
 )
 class LikeCommentView(generics.CreateAPIView):
-    serializer_class = MessageSerializer
+    queryset = CommentLike.objects.all()
+    serializer_class = serializers.CommentLikeSerializer
+    
+    def create(self, request, *args, **kwargs):
+        comment_id = self.kwargs['pk']
+        if not Comment.objects.filter(id=comment_id).exists():
+            return Response({'detail': 'The post does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        request.data['comment'] = comment_id
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
 
-    def post(self, request, pk):
-        user = request.user
-        try:
-            comment = Comment.objects.get(pk=pk)
-        except Comment.DoesNotExist:
-            return Response({'detail': 'The comment does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-        if comment.likes.filter(user=user).exists():
-            return Response({'detail': 'You are already liking this comment.'}, status=status.HTTP_400_BAD_REQUEST)
+        message = MessageSerializer({'message': 'You have successfully liked the comment.'})
 
-        CommentLike.objects.create(user=user, comment=comment)
-        serializer = MessageSerializer({'message': 'You have successfully liked the comment.'})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        headers = self.get_success_headers(serializer.data)
+        return Response(message.data, status=status.HTTP_201_CREATED, headers=headers)
+    
 
 like_comment_view = LikeCommentView.as_view()
 

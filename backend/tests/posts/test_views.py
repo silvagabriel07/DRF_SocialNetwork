@@ -438,7 +438,6 @@ class TestLikeCommentView(APITestCase):
             'detail': 'You are already liking this comment.'
         }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        print(response.data)
         self.assertEqual(str(response.data['detail'][0]), expected['detail'])
         self.assertEqual(self.comment.likes.all().count(), 1)
 

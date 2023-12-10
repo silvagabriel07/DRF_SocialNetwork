@@ -94,18 +94,20 @@ like_post_view = LikePostView.as_view()
 )
 class DislikePostView(generics.DestroyAPIView):
     serializer_class = MessageSerializer
-    def delete(self, request, pk):
-        user = request.user
-        try:
-            post = Post.objects.get(pk=pk)
-        except Post.DoesNotExist:
+    
+    def destroy(self, request, *args, **kwargs):
+        post_id = self.kwargs['pk']
+    
+        if not Post.objects.filter(id=post_id).exists():
             return Response({'detail': 'The post does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-        if not post.likes.filter(user=user).exists():
+        instance = PostLike.objects.filter(post_id=post_id, user=request.user.id)    
+        if not instance.exists():
             return Response({'detail': 'You were not liking this post.'}, status=status.HTTP_400_BAD_REQUEST)
-        postlike = PostLike.objects.get(post=post, user=user)
-        postlike.delete()
-        serializer = MessageSerializer({'message': 'You have successfully disliked the post.'})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        instance.first().delete()
+        message = MessageSerializer({'message': 'You have successfully disliked the post.'})
+
+        return Response(message.data, status=status.HTTP_200_OK)
             
 dislike_post_view = DislikePostView.as_view()
 
@@ -203,19 +205,19 @@ like_comment_view = LikeCommentView.as_view()
 class DislikeCommentView(generics.DestroyAPIView):
     serializer_class = MessageSerializer
 
-    def delete(self, request, pk):
-        user = request.user
-        try:
-            comment = Comment.objects.get(pk=pk)
-        except Comment.DoesNotExist:
+    def destroy(self, request, *args, **kwargs):
+        comment_id = self.kwargs['pk']
+    
+        if not Comment.objects.filter(id=comment_id).exists():
             return Response({'detail': 'The comment does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-        if not comment.likes.filter(user=user).exists():
+        instance = CommentLike.objects.filter(comment_id=comment_id, user=request.user.id)    
+        if not instance.exists():
             return Response({'detail': 'You were not liking this comment.'}, status=status.HTTP_400_BAD_REQUEST)
         
-        commentlike = CommentLike.objects.get(comment=comment, user=user)
-        commentlike.delete()
-        serializer = MessageSerializer({'message': 'You have successfully disliked the comment.'})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        instance.first().delete()
+        message = MessageSerializer({'message': 'You have successfully disliked the comment.'})
+
+        return Response(message.data, status=status.HTTP_200_OK)
             
 dislike_comment_view = DislikeCommentView.as_view()
 

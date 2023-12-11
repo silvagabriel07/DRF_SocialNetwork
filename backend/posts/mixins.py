@@ -28,12 +28,12 @@ class PostValidationMixin:
         if timezone.now() > instance.created_at + max_editable_time:
             raise serializers.ValidationError({"detail": "This post cannot be edited any further."})
 
-    def validate(self, attrs):
+    def validate(self, data):
         if self.instance:
             self.validate_edited(self.instance)
             self.validate_editable_time(self.instance)
             self.instance.edited = True
-        return super().validate(attrs)
+        return super().validate(data)
 
 
 class PostSerializerMixin(serializers.ModelSerializer):

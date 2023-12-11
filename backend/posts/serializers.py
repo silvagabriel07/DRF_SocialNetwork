@@ -101,13 +101,14 @@ class CommentLikeSerializer(serializers.ModelSerializer):
             'profile': {'read_only':True, 'required': False},
         }
         
-    def validate(self, attrs):
+    def validate(self, data):
         request = self.context.get('request')
-        attrs['user'] = request.user
-        commentlike = CommentLike.objects.filter(comment=attrs['comment'], user=request.user)
+        data['user'] = request.user
+        commentlike = CommentLike.objects.filter(comment=data['comment'], user=request.user)
         if commentlike.exists():
             raise serializers.ValidationError({'detail': 'You are already liking this comment.'})
-        return attrs
+        return data
+    
     
 
 class PostLikeSerializer(serializers.ModelSerializer):
@@ -120,11 +121,11 @@ class PostLikeSerializer(serializers.ModelSerializer):
             'profile': {'read_only':True, 'required': False},
         }
 
-    def validate(self, attrs):
+    def validate(self, data):
         request = self.context.get('request')
-        attrs['user'] = request.user
-        postlike = PostLike.objects.filter(post=attrs['post'], user=request.user)
+        data['user'] = request.user
+        postlike = PostLike.objects.filter(post=data['post'], user=request.user)
         if postlike.exists():
             raise serializers.ValidationError({'detail': 'You are already liking this post.'})
-        return attrs
+        return data
 

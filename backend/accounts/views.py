@@ -91,22 +91,22 @@ profile_update_view = ProfileUpdateView.as_view()
         },
 )
 class FollowUserView(generics.CreateAPIView):
-    serializer_class = serializers.MessageSerializer
+    queryset = Follow.objects.all()
+    serializer_class = serializers.FollowSerializer
 
-    def post(self, request, pk):
-        request_user = request.user
-        try:
-            user = User.objects.get(pk=pk)
-        except User.DoesNotExist:
+
+    def create(self, request, *args, **kwargs):
+        user_id = self.kwargs['pk']
+        if not User.objects.filter(id=user_id).exists():
             return Response({'detail': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-        if request_user.following.filter(followed=user).exists():
-            return Response({'detail': 'You are already following this user.'}, status=status.HTTP_400_BAD_REQUEST)
-        elif request_user.id == user.id:
-            return Response({'detail': 'You can not follow yourself.'}, status=status.HTTP_400_BAD_REQUEST)
-        else:            
-            Follow.objects.create(follower=request_user, followed=user)
-            serializer = serializers.MessageSerializer({'message': 'You have successfully followed the user.'})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        request.data['followed'] = user_id
+        request.data['follower'] = request.user.id
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        message = serializers.MessageSerializer({'message': 'You have successfully followed the user.'})
+        headers = self.get_success_headers(serializer.data)
+        return Response(message.data, status=status.HTTP_201_CREATED, headers=headers)
             
 follow_user_view = FollowUserView.as_view()
 

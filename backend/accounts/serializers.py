@@ -107,6 +107,39 @@ class MessageSerializer(serializers.Serializer):
     message = serializers.CharField()
 
 
+class FollowSerializer(serializers.ModelSerializer):
+    follower = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+    )
+    # I clean the validators` because I don't want the default unique together validator
+    # I  made my own unique together validator in the `validate()` method 
+    validators = []
+    class Meta:
+        model = Follow
+        fields = ['followed', 'follower', 'created_at']
+        extra_kwargs = {
+            'follower': {'required': False}
+        }
+
+    def validate(self, data):
+        request = self.context.get('request')
+        data['follower'] = request.user
+        follow = Follow.objects.filter(followed=data['followed'], follower=request.user)
+        if follow.exists():
+            raise serializers.ValidationError({'detail': 'You are already following this user.'})
+        if request.user == data['followed']:
+            raise serializers.ValidationError({'detail': 'You can not follow yourself.'})
+        return data
+    
+    def create(self, validated_data):
+        follow = Follow.objects.create(
+            follower=validated_data['follower'],
+            followed=validated_data['followed'],
+        )
+        return follow
+    
+
 class FollowerSerializer(serializers.ModelSerializer):
     profile = ProfileSimpleSerializer(source='follower.profile')
     class Meta:

@@ -287,7 +287,8 @@ class TestFollowUserView(APITestCase):
         response = self.client.post(url)
         expected = {
             'message': 'You have successfully followed the user.'        
-        }
+        } 
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data, expected)
         self.user1.refresh_from_db()
@@ -313,7 +314,7 @@ class TestFollowUserView(APITestCase):
             'detail': 'You are already following this user.'
         }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, expected)
+        self.assertEqual(str(response.data['detail'][0]), expected['detail'])
         self.assertEqual(self.user1.following.all().count(), 1)
         
     def test_follow_yourself_fails(self):
@@ -323,7 +324,7 @@ class TestFollowUserView(APITestCase):
             'detail': 'You can not follow yourself.'
         }
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, expected)
+        self.assertContains(response, expected['detail'], status_code=400)
         self.assertEqual(self.user1.following.all().count(), 0)
 
 

@@ -21,7 +21,7 @@ class ProfileFilter(filters.FilterSet):
         return queryset.filter(
             Q(name__icontains=value) | Q(bio__icontains=value) | Q(user__username__icontains=value)
         )
-        
+
 
 class FollowerFilter(filters.FilterSet):
     class Meta:

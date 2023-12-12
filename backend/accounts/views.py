@@ -1,26 +1,23 @@
-from rest_framework import generics, permissions, status, serializers
+from rest_framework import generics, permissions, status
 from rest_framework.views import Response
 from accounts.models import User, Profile, Follow
-from accounts.serializers import (
-    UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer,
-    MessageSerializer, FollowerSerializer, FollowedSerializer
-)
-from django.core.exceptions import ValidationError
+from accounts import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.filters import UserFilter, ProfileFilter, FollowerFilter, FollowedFilter
 from drf_spectacular.utils import extend_schema
+from accounts.permissions import IsUser
 # Create your views here.
 
 class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = serializers.UserSerializer
     
 user_detail_view = UserDetailView.as_view()
 
 
 class UserListView(generics.ListAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = serializers.UserSerializer
     filterset_class = UserFilter
     
 user_list_view = UserListView.as_view()
@@ -28,7 +25,7 @@ user_list_view = UserListView.as_view()
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserCreationSerializer
+    serializer_class = serializers.UserCreationSerializer
     permission_classes = [permissions.AllowAny]
     
     def post(self, request, *args, **kwargs):
@@ -39,7 +36,7 @@ class UserRegistrationView(generics.CreateAPIView):
         return Response({
             'refresh': str(refresh),
             'access': str(refresh.access_token),
-            'user': UserCreationSerializer(user, context=self.get_serializer_context()).data
+            'user': self.get_serializer(user, context=self.get_serializer_context()).data
         }, status=status.HTTP_201_CREATED)
 
 user_registration_view = UserRegistrationView.as_view()
@@ -47,45 +44,30 @@ user_registration_view = UserRegistrationView.as_view()
 
 class UserUpdateView(generics.UpdateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserUpdateSerializer
+    serializer_class = serializers.UserUpdateSerializer
+    permission_classes = [IsUser]
     
-    def update(self, request, *args, **kwargs):
-        user = self.get_object()
-
-        if not request.user == user:
-            error_response = {'request.user': 'You are not authorized to perform this action.'}
-            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-
-        return super().update(request, *args, **kwargs)
-
 user_update_view = UserUpdateView.as_view()    
 
 
 class UserDeleteView(generics.DestroyAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
-    
-    def destroy(self, request, *args, **kwargs):
-        user = self.get_object()
-        
-        if not request.user == user:
-            error_response = {'request.user': 'You are not authorized to perform this action.'}
-            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-        return super().destroy(request, *args, **kwargs)
+    serializer_class = serializers.UserSerializer
+    permission_classes = [IsUser]
 
 user_delete_view = UserDeleteView.as_view()    
 
 
 class ProfileDetailView(generics.RetrieveAPIView):
     queryset = Profile.objects.all()
-    serializer_class = ProfileSerializer
+    serializer_class = serializers.ProfileSerializer
     
 profile_detail_view = ProfileDetailView.as_view()
 
 
 class ProfileListView(generics.ListAPIView):
     queryset = Profile.objects.all()
-    serializer_class = ProfileSerializer
+    serializer_class = serializers.ProfileSerializer
     filterset_class = ProfileFilter
 
 profile_list_view = ProfileListView.as_view()
@@ -93,15 +75,8 @@ profile_list_view = ProfileListView.as_view()
 
 class ProfileUpdateView(generics.UpdateAPIView):
     queryset = Profile.objects.all()
-    serializer_class = ProfileSerializer
-    
-    def update(self, request, *args, **kwargs):
-        profile = self.get_object()
-
-        if not request.user == profile.user:
-            error_response = {'request.user': 'You are not authorized to perform this action.'}
-            return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-        return super().update(request, *args, **kwargs)
+    serializer_class = serializers.ProfileSerializer
+    permission_classes = [IsUser]
     
 profile_update_view = ProfileUpdateView.as_view()
 
@@ -110,28 +85,28 @@ profile_update_view = ProfileUpdateView.as_view()
     summary="Follow a User",
     description="Endpoint for follow a specific user.",
     responses={
-        201: MessageSerializer,
+        201: serializers.MessageSerializer,
         404: {"detail": "The user does not exist."},
-        400: {"detail": "You are already following this user."}
+        400: {"detail": "You are already following this user."},
+        400: {"detail": "You can not follow yourself."},
         },
 )
 class FollowUserView(generics.CreateAPIView):
-    serializer_class = MessageSerializer
+    queryset = Follow.objects.all()
+    serializer_class = serializers.FollowSerializer
 
-    def post(self, request, pk):
-        request_profile = request.user.profile
-        try:
-            user = User.objects.get(pk=pk)
-        except User.DoesNotExist:
+
+    def create(self, request, *args, **kwargs):
+        user_id = self.kwargs['pk']
+        if not User.objects.filter(id=user_id).exists():
             return Response({'detail': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-        if request_profile.user.following.filter(followed=user).exists():
-            return Response({'detail': 'You are already following this user.'}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            request_profile.follow(user)
-        except ValidationError as e:
-            raise serializers.ValidationError({'detail': list(e)}) 
-        serializer = MessageSerializer({'message': 'You have successfully followed the user.'})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        request.data['followed'] = user_id
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        message = serializers.MessageSerializer({'message': 'You have successfully followed the user.'})
+        headers = self.get_success_headers(serializer.data)
+        return Response(message.data, status=status.HTTP_201_CREATED, headers=headers)
             
 follow_user_view = FollowUserView.as_view()
 
@@ -140,35 +115,34 @@ follow_user_view = FollowUserView.as_view()
     summary="Unfollow a User",
     description="Endpoint for unfollow a specific user.",
     responses={
-        200: MessageSerializer,
+        200: serializers.MessageSerializer,
         404: {"detail": "The user does not exist."},
         400: {"detail": "You were not following this user."}
         },
 )
 class UnfollowUserView(generics.DestroyAPIView):
-    serializer_class = MessageSerializer
+    serializer_class = serializers.MessageSerializer
 
     def delete(self, request, pk):
-        request_profile = request.user.profile
+        request_user = request.user
         try:
             user = User.objects.get(pk=pk)
         except User.DoesNotExist:
             return Response({'detail': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-        if not request_profile.user.following.filter(followed=user).exists():
+        if not request_user.following.filter(followed=user).exists():
             return Response({'detail': 'You were not following this user.'}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            request_profile.unfollow(user)
-        except ValidationError as e:
-            raise serializers.ValidationError({'detail': list(e)}) 
-        serializer = MessageSerializer({'message': 'You have successfully unfollowed the user.'})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            follow = Follow.objects.get(follower=request_user, followed=user)
+            follow.delete()
+            serializer = serializers.MessageSerializer({'message': 'You have successfully unfollowed the user.'})
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 unfollow_user_view = UnfollowUserView.as_view()
 
 
 class FollowerListView(generics.ListAPIView):
     queryset = Follow.objects.all()
-    serializer_class = FollowerSerializer
+    serializer_class = serializers.FollowerSerializer
     filterset_class = FollowerFilter
     
     def get_queryset(self):
@@ -181,7 +155,7 @@ follower_list_view = FollowerListView.as_view()
 
 class FollowedListView(generics.ListAPIView):
     queryset = Follow.objects.all()
-    serializer_class = FollowedSerializer
+    serializer_class = serializers.FollowedSerializer
     filterset_class = FollowedFilter
 
     def get_queryset(self):
@@ -190,3 +164,5 @@ class FollowedListView(generics.ListAPIView):
         return qs.filter(follower_id=user_follower_id)
          
 followed_list_view = FollowedListView.as_view()
+
+

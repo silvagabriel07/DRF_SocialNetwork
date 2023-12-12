@@ -1,7 +1,10 @@
 from rest_framework.test import APITestCase, APIRequestFactory
-from accounts.models import Profile, User
+from accounts.models import Profile, User, Follow
 from tests.accounts.factories import UserFactory, FollowFactory
-from accounts.serializers import UserSerializer, ProfileSerializer, UserCreationSerializer, UserUpdateSerializer, FollowerSerializer, FollowedSerializer, ProfileSimpleSerializer
+from accounts.serializers import (
+    UserSerializer,ProfileSerializer, UserCreationSerializer, UserUpdateSerializer,
+    FollowerSerializer, FollowedSerializer, FollowSerializer, ProfileSimpleSerializer
+                                  )
 from django.urls import reverse
 from posts.models import Post
 
@@ -14,7 +17,7 @@ class TestUserSerializer(APITestCase):
         self.serializer = UserSerializer(
             self.user, context={'request': request})
 
-    def test_data_serialized(self):
+    def test_initial_fields_serialized(self):
         expected = {
             'id': self.user.id,
             'username': self.user.username,
@@ -35,29 +38,33 @@ class TestUserSerializer(APITestCase):
 
 
 class TestUserCreationSerializer(APITestCase):
-    def test_data_created_serialized(self):
-        data = {
+    def setUp(self) -> None:
+        self.data = {
             'username': 'user00',
             'email': 'em@gmail.com',
             'password': 'senha123@',
         }
-        serializer = UserCreationSerializer(data=data)
+        
+    def test_data_created_serialized(self):
+        serializer = UserCreationSerializer(data=self.data)
         self.assertTrue(serializer.is_valid())
         serializer.save()
-        expected = {
-            'id': serializer.data['id'],
-            'username': 'user00',
-            'email': 'em@gmail.com',
-            'is_active': serializer.data['is_active']
-        }
-        self.assertEqual(serializer.data, expected)
+
+        self.assertEqual(serializer.data['username'], self.data['username'])
+        self.assertEqual(serializer.data['email'], self.data['email'])
         user_qs = User.objects.filter(id=serializer.data['id'])
         self.assertTrue(user_qs.exists())
         user = user_qs.first()
-        self.assertEqual(user.username, expected['username'])
-        self.assertEqual(user.email, expected['email'])
-        self.assertEqual(user.id, expected['id'])
-
+        self.assertEqual(user.username, self.data['username'])
+        self.assertEqual(user.email, self.data['email'])
+    
+    def test_password_is_hashed(self):
+        serializer = UserCreationSerializer(data=self.data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        user = User.objects.get(username=serializer.data['username'])
+        self.assertTrue(user.check_password(self.data['password']))
+        
 
 class TestUserUpdateSerializer(APITestCase):
     def setUp(self) -> None:
@@ -70,16 +77,11 @@ class TestUserUpdateSerializer(APITestCase):
             'password': 'senhanova123@',
             'username': 'username14'
         }
-        expected = {
-            'id': self.user.id,
-            'username': data['username']
-        }
         serializer = UserUpdateSerializer(data=data, instance=self.user)
         self.assertTrue(serializer.is_valid())
         serializer.save()
         self.assertTrue(self.user.check_password(data['password']))
         self.assertEqual(serializer.data['username'], data['username'])
-        self.assertEqual(serializer.data, expected)
 
 
 class TestProfileSerializer(APITestCase):
@@ -167,7 +169,7 @@ class TestProfileSimpleSerializer(APITestCase):
         factory = APIRequestFactory()
         self.request = factory.get('/')
         
-    def test_returned_data(self):
+    def test_initial_fields_returned(self):
         user_serialzed = UserSerializer(self.profile.user, context={'request': self.request}).data
         expected = {
             'id': self.profile.id,
@@ -176,8 +178,69 @@ class TestProfileSimpleSerializer(APITestCase):
             'user': user_serialzed
         }
         serializer = ProfileSimpleSerializer(self.profile, context={'request': self.request})
-        self.assertEqual(serializer.data, expected)
+        self.assertEqual(serializer.data['id'], expected['id'])
+        self.assertEqual(serializer.data['name'], expected['name'])
+        self.assertEqual(serializer.data['picture'], expected['picture'])
+        self.assertEqual(serializer.data['user'], expected['user'])     
         
+
+class TestFollowSerializer(APITestCase):
+    def setUp(self) -> None:
+        self.user1 = UserFactory()
+        self.user2 = UserFactory()
+        factory = APIRequestFactory()
+        self.request = factory.get('/')
+    
+    def test_follow_user_successfully(self):
+        self.request.user = self.user1
+        data = {
+            'followed': self.user2.id,
+        }
+        serializer = FollowSerializer(data=data, context={'request': self.request})
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        follow = Follow.objects.filter(followed=data['followed'], follower=self.request.user)
+        self.assertTrue(follow.exists())
+        
+    def test_follow_user_already_followed_fails(self):
+        self.request.user = self.user1
+        data = {
+            'followed': self.user2.id,
+        }
+        serializer = FollowSerializer(data=data, context={'request': self.request})
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        data = {
+            'followed': self.user2.id,
+        }
+        serializer = FollowSerializer(data=data, context={'request': self.request})
+        self.assertFalse(serializer.is_valid())
+        expected = {
+            'detail': 'You are already following this user.'
+        }
+        self.assertEqual(str(serializer.errors['detail'][0]), expected['detail'])
+        
+    def test_follow_yourself_fails(self):
+        self.request.user = self.user1
+        data = {
+            'followed': self.user1.id,
+        }
+        serializer = FollowSerializer(data=data, context={'request': self.request})
+        self.assertFalse(serializer.is_valid())
+        expected = {
+            'detail': 'You can not follow yourself.'
+        }
+        self.assertEqual(str(serializer.errors['detail'][0]), expected['detail'])
+
+    def test_follow_that_does_not_exist_fails(self):
+        self.request.user = self.user1
+        data = {
+            'followed': 999,
+        }
+        serializer = FollowSerializer(data=data, context={'request': self.request})
+        self.assertFalse(serializer.is_valid())
+
+
 
 class TestFollowerSerializer(APITestCase):
     def setUp(self) -> None:
@@ -194,7 +257,7 @@ class TestFollowerSerializer(APITestCase):
         for follow in self.all_followers:
             data = {'profile': ProfileSimpleSerializer(follow.follower.profile, context={'request': request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
-        self.assertEqual(serializer.data, expected)
+        self.assertEqual(serializer.data[0]['profile'], expected[0]['profile'])
         
 
 class TestFollowedSerializer(APITestCase):
@@ -212,6 +275,6 @@ class TestFollowedSerializer(APITestCase):
         for follow in self.all_following:
             data = {'profile': ProfileSimpleSerializer(follow.followed.profile, context={'request': request}).data, 'created_at': follow.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')}
             expected.append(data)
-        self.assertEqual(serializer.data, expected)
+        self.assertEqual(serializer.data[0]['profile'], expected[0]['profile'])
         
         

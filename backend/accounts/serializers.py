@@ -1,8 +1,7 @@
 from rest_framework import serializers
 from accounts.models import User, Profile, Follow
-import django.contrib.auth.password_validation as validators
-from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import check_password
+from accounts.mixins import UserValidationMixin
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -24,7 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
         }
     
 
-class UserCreationSerializer(serializers.ModelSerializer):
+class UserCreationSerializer(UserValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'password', 'is_active']
@@ -42,20 +41,8 @@ class UserCreationSerializer(serializers.ModelSerializer):
             )
         return user
     
-    def validate_password(self, value):
-        user = User(
-            username='username',
-            email='email',
-            password=value
-            )
-        try:
-            validators.validate_password(password=value, user=user)
-        except ValidationError as err:
-            raise serializers.ValidationError(err.messages)
-        return value
 
-
-class UserUpdateSerializer(UserCreationSerializer):
+class UserUpdateSerializer(UserValidationMixin, serializers.ModelSerializer):
     old_password = serializers.CharField(write_only=True)
     
     class Meta:
@@ -90,7 +77,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = [
-            'id', 'name', 'bio', 'created_at', 'picture', 'user', 'total_posts', 'total_followers', 'total_following'        
+            'id', 'name', 'bio', 'picture', 'created_at', 'user', 'total_posts', 'total_followers', 'total_following'        
         ]
         extra_kwargs = {
             'id': {'read_only': True},
@@ -100,7 +87,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         
     def update(self, instance, validated_data):
         instance.name = validated_data.get('name', instance.name)
-        instance.bio = validated_data.get('bio',instance.bio)
+        instance.bio = validated_data.get('bio', instance.bio)
         
         instance.picture = validated_data.get('picture', instance.picture)
         instance.save()
@@ -119,6 +106,39 @@ class ProfileSimpleSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.Serializer):
     message = serializers.CharField()
 
+
+class FollowSerializer(serializers.ModelSerializer):
+    follower = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+    )
+    # I clean the validators` because I don't want the default unique together validator
+    # I  made my own unique together validator in the `validate()` method 
+    validators = []
+    class Meta:
+        model = Follow
+        fields = ['followed', 'follower', 'created_at']
+        extra_kwargs = {
+            'follower': {'required': False}
+        }
+
+    def validate(self, data):
+        request = self.context.get('request')
+        data['follower'] = request.user
+        follow = Follow.objects.filter(followed=data['followed'], follower=request.user)
+        if follow.exists():
+            raise serializers.ValidationError({'detail': 'You are already following this user.'})
+        if request.user == data['followed']:
+            raise serializers.ValidationError({'detail': 'You can not follow yourself.'})
+        return data
+    
+    def create(self, validated_data):
+        follow = Follow.objects.create(
+            follower=validated_data['follower'],
+            followed=validated_data['followed'],
+        )
+        return follow
+    
 
 class FollowerSerializer(serializers.ModelSerializer):
     profile = ProfileSimpleSerializer(source='follower.profile')

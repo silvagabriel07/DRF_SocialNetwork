@@ -270,13 +270,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/Follow'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/Follow'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/Follow'
         required: true
       security:
       - cookieAuth: []
@@ -298,7 +298,7 @@ paths:
           content:
             application/json:
               schema:
-                detail: You are already following this user.
+                detail: You can not follow yourself.
           description: ''
   /api/accounts/users/{id}/followed/:
     get:
@@ -784,13 +784,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/PostLike'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/PostLike'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/PostLike'
         required: true
       security:
       - cookieAuth: []
@@ -1007,13 +1007,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/CommentLike'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/CommentLike'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/CommentLike'
         required: true
       security:
       - cookieAuth: []
@@ -1326,6 +1326,20 @@ components:
       - comment
       - created_at
       - id
+    Follow:
+      type: object
+      properties:
+        followed:
+          type: integer
+        follower:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - followed
     Followed:
       type: object
       properties:
@@ -1574,6 +1588,9 @@ components:
         total_comments:
           type: integer
           readOnly: true
+        edited:
+          type: boolean
+          readOnly: true
     PatchedProfile:
       type: object
       properties:
@@ -1588,13 +1605,13 @@ components:
           type: string
           nullable: true
           maxLength: 150
+        picture:
+          type: string
+          format: uri
         created_at:
           type: string
           format: date-time
           readOnly: true
-        picture:
-          type: string
-          format: uri
         user:
           $ref: '#/components/schemas/User'
         total_posts:
@@ -1659,9 +1676,13 @@ components:
         total_comments:
           type: integer
           readOnly: true
+        edited:
+          type: boolean
+          readOnly: true
       required:
       - content
       - created_at
+      - edited
       - id
       - nested_tags
       - title
@@ -1723,8 +1744,12 @@ components:
         total_comments:
           type: integer
           readOnly: true
+        edited:
+          type: boolean
+          readOnly: true
       required:
       - created_at
+      - edited
       - id
       - nested_tags
       - total_comments
@@ -1744,13 +1769,13 @@ components:
           type: string
           nullable: true
           maxLength: 150
+        picture:
+          type: string
+          format: uri
         created_at:
           type: string
           format: date-time
           readOnly: true
-        picture:
-          type: string
-          format: uri
         user:
           $ref: '#/components/schemas/User'
         total_posts:

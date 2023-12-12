@@ -87,7 +87,8 @@ profile_update_view = ProfileUpdateView.as_view()
     responses={
         201: serializers.MessageSerializer,
         404: {"detail": "The user does not exist."},
-        400: {"detail": "You are already following this user."}
+        400: {"detail": "You are already following this user."},
+        400: {"detail": "You can not follow yourself."},
         },
 )
 class FollowUserView(generics.CreateAPIView):
@@ -100,7 +101,6 @@ class FollowUserView(generics.CreateAPIView):
         if not User.objects.filter(id=user_id).exists():
             return Response({'detail': 'The user does not exist.'}, status=status.HTTP_404_NOT_FOUND)
         request.data['followed'] = user_id
-        request.data['follower'] = request.user.id
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -164,3 +164,5 @@ class FollowedListView(generics.ListAPIView):
         return qs.filter(follower_id=user_follower_id)
          
 followed_list_view = FollowedListView.as_view()
+
+

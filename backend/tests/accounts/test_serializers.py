@@ -17,7 +17,7 @@ class TestUserSerializer(APITestCase):
         self.serializer = UserSerializer(
             self.user, context={'request': request})
 
-    def test_data_serialized(self):
+    def test_initial_fields_serialized(self):
         expected = {
             'id': self.user.id,
             'username': self.user.username,
@@ -65,7 +65,6 @@ class TestUserCreationSerializer(APITestCase):
         user = User.objects.get(username=serializer.data['username'])
         self.assertTrue(user.check_password(self.data['password']))
         
-
 
 class TestUserUpdateSerializer(APITestCase):
     def setUp(self) -> None:
@@ -170,7 +169,7 @@ class TestProfileSimpleSerializer(APITestCase):
         factory = APIRequestFactory()
         self.request = factory.get('/')
         
-    def test_initial_data_returned(self):
+    def test_initial_fields_returned(self):
         user_serialzed = UserSerializer(self.profile.user, context={'request': self.request}).data
         expected = {
             'id': self.profile.id,
@@ -182,8 +181,7 @@ class TestProfileSimpleSerializer(APITestCase):
         self.assertEqual(serializer.data['id'], expected['id'])
         self.assertEqual(serializer.data['name'], expected['name'])
         self.assertEqual(serializer.data['picture'], expected['picture'])
-        self.assertEqual(serializer.data['user'], expected['user'])
-        
+        self.assertEqual(serializer.data['user'], expected['user'])     
         
 
 class TestFollowSerializer(APITestCase):

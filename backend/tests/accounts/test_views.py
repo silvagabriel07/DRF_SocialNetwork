@@ -39,7 +39,6 @@ class TestUserRegistrationView(APITestCase):
                 'email': data['email'],
                 },
         }
-        
         self.assertIn('refresh', response.data)
         self.assertIn('access', response.data)
         self.assertIn('user', response.data)
@@ -216,20 +215,16 @@ class TestProfileUpdateView(APITestCase):
         self.client.force_login(user)
         self.profile = Profile.objects.get(user=user)
         self.url = reverse('profile-update', args=[self.profile.id])
-        
+    
     def test_patch_update_name_and_bio(self):
         data = {
             'name': 'newname',
             'bio': 'new bio sla.',
         }
-        expected = {
-            'name': data['name'],
-            'bio': data['bio'],
-        }
         response = self.client.patch(self.url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], expected['name'])
-        self.assertEqual(response.data['bio'], expected['bio'])
+        self.assertEqual(response.data['name'], data['name'])
+        self.assertEqual(response.data['bio'], data['bio'])
         self.assertTrue(Profile.objects.filter(bio=data['bio'], name=data['name']).exists())
     
     def test_put_profile_is_not_updated_if_the_profile_user_is_not_the_user_from_the_request(self):
@@ -287,7 +282,7 @@ class TestFollowUserView(APITestCase):
         response = self.client.post(url)
         expected = {
             'message': 'You have successfully followed the user.'        
-        } 
+        }
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data, expected)

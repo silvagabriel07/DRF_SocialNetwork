@@ -13,12 +13,15 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
+from environ import Env
 
+env = Env()
+Env.read_env()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+USING_DATABASE = env('USING_DATABASE', default='sqlite3')
 
-
-# Quick-start development settings - unsuitable for production
+# Quick-start development settings - unsuitable for production  
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -81,12 +84,21 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+if USING_DATABASE == 'postgresql':
+    DATABASES['default']["ENGINE"] = 'django.db.backends.postgresql'
+    DATABASES['default']["NAME"] = env('DATABASE_NAME')
+    DATABASES['default']["USER"] = env('DATABASE_USER')
+    DATABASES['default']["PASSWORD"] = env('DATABASE_PASSWORD')
+    DATABASES['default']["HOST"] = env('DATABASE_HOST')
+    DATABASES['default']["PORT"] = env('DATABASE_PORT')
 
 
 # Password validation

@@ -1,0 +1,40 @@
+version: '3.8' 
+
+services:
+  drfpostgres:
+    image: postgres
+    container_name: drfpostgres
+    networks:
+      - mynetwork
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: drf_socialnet_db
+    volumes:
+      - drf-db-volume:/var/lib/postgresql/data
+    restart: always  
+
+  drfsocialmyapp:
+    image: drfsocialnetwork:1.0
+    container_name: drfsocialmyapp
+    networks:
+      - mynetwork
+    environment:
+      DATABASE_NAME: drf_socialnet_db
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_PORT: 5432
+      DATABASE_HOST: drfpostgres  
+      USING_DATABASE: postgresql
+    ports:
+      - 8000:8000
+    depends_on:
+      - drfpostgres 
+    restart: always 
+
+networks:
+  mynetwork:
+    driver: bridge 
+
+volumes:
+  drf-db-volume: 

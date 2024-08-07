@@ -13,7 +13,7 @@ services:
     restart: always  
 
   drfsocialmyapp:
-    image: drfsocialnetwork:1.0
+    build: .
     container_name: drfsocialmyapp
     networks:
       - mynetwork
